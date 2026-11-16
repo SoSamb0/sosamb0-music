@@ -2,6 +2,7 @@
 	import { formatDuration, formatTime, plural } from '$lib/app.svelte';
 	import { menu, songMenu } from '$lib/menu.svelte';
 	import { player } from '$lib/player.svelte';
+	import { settings } from '$lib/settings.svelte';
 	import Cover from './Cover.svelte';
 	import Icon from './Icon.svelte';
 
@@ -10,6 +11,7 @@
 	let list = $state<HTMLElement>();
 
 	const upcoming = $derived(player.queue.length - player.index - 1);
+	const cachedCount = $derived(player.queue.filter((q) => player.cached.has(player.cacheKey(q.song))).length);
 	const remaining = $derived(player.queue.slice(player.index + 1).reduce((sum, q) => sum + (q.song.duration ?? 0), 0));
 
 	// Open on the track that is playing.
@@ -31,6 +33,12 @@
 			<p class="muted small">
 				{#if upcoming > 0}{plural(upcoming, 'трек', 'трека', 'треков')} впереди · {formatDuration(remaining)}{:else}Дальше пусто{/if}
 			</p>
+			{#if player.queue.length && !settings.data.demo}
+				<p class="muted small cache" title="Скачанные треки переключаются мгновенно и играют без сети">
+					<Icon name="download" size={13} />
+					В кэше {cachedCount} из {player.queue.length}{#if player.downloading.size} · качается…{/if}{#if player.cacheLimited} · упёрлись в предел кэша{/if}
+				</p>
+			{/if}
 		</div>
 		<button class="btn small" onclick={() => player.clearUpcoming()} disabled={upcoming <= 0}>Очистить</button>
 	</header>
@@ -43,6 +51,7 @@
 	{:else}
 		<div class="list" bind:this={list} role="list">
 			{#each player.queue as item, i (item.token)}
+				{@const key = player.cacheKey(item.song)}
 				<div
 					class="row"
 					class:current={i === player.index}
@@ -73,6 +82,13 @@
 						<div class="title ellipsis">{item.song.title}</div>
 						<div class="artist ellipsis">{item.song.artist ?? ''}</div>
 					</div>
+					<span class="cache-state">
+						{#if player.cached.has(key)}
+							<span class="ok" title="Скачан — играет без сети"><Icon name="saved" size={14} /></span>
+						{:else if player.downloading.has(key)}
+							<span class="spinner tiny" title="Скачивается"></span>
+						{/if}
+					</span>
 					<span class="dur tnum">{formatTime(item.song.duration)}</span>
 					{#if i !== player.index}
 						<button class="icon-btn remove" onclick={() => player.remove(i)} aria-label="Убрать из очереди"><Icon name="x" size={15} /></button>
@@ -103,6 +119,29 @@
 		font-size: 12.5px;
 	}
 
+	.cache {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		margin-top: 2px;
+	}
+
+	.cache-state {
+		display: grid;
+		place-items: center;
+	}
+
+	.ok {
+		color: rgb(var(--accent-rgb) / 0.75);
+		display: grid;
+	}
+
+	.spinner.tiny {
+		width: 12px;
+		height: 12px;
+		border-width: 2px;
+	}
+
 	.list {
 		flex: 1;
 		overflow-y: auto;
@@ -112,7 +151,7 @@
 	.row {
 		position: relative;
 		display: grid;
-		grid-template-columns: 40px minmax(0, 1fr) auto 28px;
+		grid-template-columns: 40px minmax(0, 1fr) 16px auto 28px;
 		align-items: center;
 		gap: 10px;
 		height: 52px;

@@ -3,21 +3,40 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { applyHotkeys, GLOBAL_HOTKEYS } from '$lib/native';
 	import { player } from '$lib/player.svelte';
-	import { settings } from '$lib/settings.svelte';
-	import { invoke } from '$lib/tauri';
+	import { ACCENTS, settings, type Look } from '$lib/settings.svelte';
+	import { inTauri, invoke } from '$lib/tauri';
 
 	const data = $derived(settings.data);
+	const look = $derived(settings.data.look);
 	let cache = $state<{ bytes: number; files: number } | null>(null);
+	const queueCached = $derived(player.queue.filter((q) => player.cached.has(player.cacheKey(q.song))).length);
 
 	async function refreshCache() {
 		cache = (await invoke<{ bytes: number; files: number }>('cache_info')) ?? null;
 	}
 	refreshCache();
+	// Keep the numbers live while the queue downloads.
+	$effect(() => {
+		const id = setInterval(refreshCache, 3000);
+		return () => clearInterval(id);
+	});
 
 	async function clearCache() {
 		await invoke('cache_clear');
 		await refreshCache();
+		await player.syncPrefetch();
 		app.toast('Кэш очищен');
+	}
+
+	function setLook<K extends keyof Look>(key: K, value: Look[K]) {
+		settings.data.look[key] = value;
+		settings.save();
+	}
+
+	function setCache<K extends keyof typeof settings.data.cache>(key: K, value: (typeof settings.data.cache)[K]) {
+		settings.data.cache[key] = value;
+		settings.save();
+		player.syncPrefetch();
 	}
 
 	function size(bytes: number): string {
@@ -131,33 +150,183 @@
 	</section>
 
 	<section>
+		<h2>Внешний вид</h2>
+		<div class="card">
+			<div class="row">
+				<div class="grow">
+					<div class="strong">Фон полноэкранного плеера</div>
+					<div class="hint">«Живой фон» медленно движется — немного нагружает видеокарту.</div>
+				</div>
+			</div>
+			<div class="row options">
+				{#each [['blur', 'Размытая обложка'], ['motion', 'Живой фон'], ['dim', 'Затемнение (как раньше)'], ['solid', 'Сплошной тёмный']] as [value, label] (value)}
+					<button class="chip" class:on={look.npBackground === value} onclick={() => setLook('npBackground', value as Look['npBackground'])}>{label}</button>
+				{/each}
+			</div>
+
+			<div class="row">
+				<div class="grow"><div class="strong">Обложка</div></div>
+				<div class="seg">
+					{#each [['square', 'Квадрат'], ['round', 'Круг'], ['vinyl', 'Винил']] as [value, label] (value)}
+						<button class="chip" class:on={look.coverShape === value} onclick={() => setLook('coverShape', value as Look['coverShape'])}>{label}</button>
+					{/each}
+				</div>
+			</div>
+			{#if look.coverShape === 'vinyl'}
+				<div class="row sub">
+					<div class="grow"><div class="strong">Скорость вращения</div></div>
+					<div class="seg">
+						{#each [[30, 'Медленно'], [12, 'Обычно'], [1.8, 'Как пластинка']] as [value, label] (value)}
+							<button class="chip" class:on={look.vinylSeconds === value} onclick={() => setLook('vinylSeconds', value as number)}>{label}</button>
+						{/each}
+					</div>
+				</div>
+				<div class="row sub">
+					<div class="grow">
+						<div class="strong">Крутить и маленькую обложку</div>
+						<div class="hint">В панели плеера внизу и в мини-плеере.</div>
+					</div>
+					<button class="switch" role="switch" aria-checked={look.vinylEverywhere} aria-label="Крутить маленькую обложку" onclick={() => setLook('vinylEverywhere', !look.vinylEverywhere)}></button>
+				</div>
+			{/if}
+
+			<div class="row">
+				<div class="grow">
+					<div class="strong">Акцентный цвет</div>
+					<div class="hint">«Из обложки» подстраивает интерфейс под каждый альбом.</div>
+				</div>
+				<div class="swatches">
+					<button class="swatch auto" class:on={look.accent === 'cover'} onclick={() => setLook('accent', 'cover')} title="Из обложки" aria-label="Цвет из обложки"></button>
+					{#each ACCENTS as color (color)}
+						<button class="swatch" class:on={look.accent === color} style:background={color} onclick={() => setLook('accent', color)} aria-label="Цвет {color}"></button>
+					{/each}
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="grow">
+					<div class="strong">Размытая обложка на фоне приложения</div>
+					<div class="hint">Цветное свечение за всем интерфейсом.</div>
+				</div>
+				<button class="switch" role="switch" aria-checked={look.appBackdrop} aria-label="Обложка на фоне" onclick={() => setLook('appBackdrop', !look.appBackdrop)}></button>
+			</div>
+			{#if look.appBackdrop}
+				<label class="row sub slider">
+					<span class="strong">Яркость свечения</span>
+					<input
+						type="range"
+						min="0.1"
+						max="0.8"
+						step="0.02"
+						value={look.backdropStrength}
+						style:--fill="{((look.backdropStrength - 0.1) / 0.7) * 100}%"
+						oninput={(e) => setLook('backdropStrength', +e.currentTarget.value)}
+					/>
+					<span class="tnum muted">{Math.round(look.backdropStrength * 100)}%</span>
+				</label>
+			{/if}
+
+			<div class="row">
+				<div class="grow"><div class="strong">Текст песни</div></div>
+				<div class="seg">
+					{#each [['s', 'Мелкий'], ['m', 'Средний'], ['l', 'Крупный']] as [value, label] (value)}
+						<button class="chip" class:on={look.lyricsSize === value} onclick={() => setLook('lyricsSize', value as Look['lyricsSize'])}>{label}</button>
+					{/each}
+				</div>
+			</div>
+			<div class="row sub">
+				<div class="grow"><div class="strong">Выравнивание</div></div>
+				<div class="seg">
+					<button class="chip" class:on={look.lyricsAlign === 'left'} onclick={() => setLook('lyricsAlign', 'left')}>По левому краю</button>
+					<button class="chip" class:on={look.lyricsAlign === 'center'} onclick={() => setLook('lyricsAlign', 'center')}>По центру</button>
+				</div>
+			</div>
+			<div class="row sub">
+				<div class="grow"><div class="strong">Показывать текст в полноэкранном плеере</div></div>
+				<button class="switch" role="switch" aria-checked={look.npLyrics} aria-label="Текст в полноэкранном плеере" onclick={() => setLook('npLyrics', !look.npLyrics)}></button>
+			</div>
+
+			<div class="row">
+				<div class="grow"><div class="strong">Масштаб интерфейса</div></div>
+				<div class="seg">
+					{#each [0.9, 1, 1.1, 1.25] as value (value)}
+						<button class="chip" class:on={look.scale === value} onclick={() => setLook('scale', value)}>{Math.round(value * 100)}%</button>
+					{/each}
+				</div>
+			</div>
+			<div class="row">
+				<div class="grow">
+					<div class="strong">Анимации интерфейса</div>
+					<div class="hint">Выключите на слабом компьютере. Вращение пластинки при этом остаётся.</div>
+				</div>
+				<button class="switch" role="switch" aria-checked={look.animations} aria-label="Анимации" onclick={() => setLook('animations', !look.animations)}></button>
+			</div>
+		</div>
+	</section>
+
+	<section>
 		<h2>Кэш</h2>
 		<div class="card">
 			<div class="row">
 				<div class="grow">
-					<div class="strong">Прослушанные треки</div>
+					<div class="strong">Скачивать очередь заранее</div>
 					<div class="hint">
-						{cache ? `Занято ${size(cache.bytes)}, файлов: ${cache.files}.` : 'Подсчёт…'} Повторное прослушивание идёт с диска, без сети.
+						Как только вы включаете альбом или плейлист, треки очереди скачиваются в фоне. Переключение и перемотка — мгновенные,
+						скачанное играет даже без сети.
 					</div>
 				</div>
-				<button class="btn" onclick={clearCache}><Icon name="trash" size={16} />Очистить</button>
+				<button class="switch" role="switch" aria-checked={data.cache.prefetch} aria-label="Скачивать очередь заранее" onclick={() => setCache('prefetch', !data.cache.prefetch)}></button>
 			</div>
+			{#if data.cache.prefetch}
+				<div class="row sub">
+					<div class="grow"><div class="strong">Сколько треков наперёд</div></div>
+					<div class="seg">
+						{#each [[3, '3'], [10, '10'], [25, '25'], [0, 'Вся очередь']] as [value, label] (value)}
+							<button class="chip" class:on={data.cache.ahead === value} onclick={() => setCache('ahead', value as number)}>{label}</button>
+						{/each}
+					</div>
+				</div>
+				{#if player.queue.length}
+					<div class="row sub">
+						<div class="grow hint">
+							Сейчас в очереди: в кэше {queueCached} из {player.queue.length}{player.downloading.size ? ', качается…' : ''}.
+							{#if player.cacheLimited}Очередь больше предела кэша — часть треков не будет скачана заранее.{/if}
+						</div>
+					</div>
+				{/if}
+			{/if}
 			<div class="row">
-				<div class="grow"><div class="strong">Предел размера</div></div>
+				<div class="grow">
+					<div class="strong">Предел размера</div>
+					<div class="hint">Когда кэш заполнен, удаляются давно не игравшие треки.</div>
+				</div>
 				<select
 					class="field limit"
 					value={String(data.options.cacheLimitMb)}
 					onchange={(e) => {
 						data.options.cacheLimitMb = Number(e.currentTarget.value);
 						settings.pushOptions();
+						player.syncPrefetch();
 					}}
 					aria-label="Предел размера кэша"
 				>
-					<option value="512">512 МБ</option>
-					<option value="2048">2 ГБ</option>
-					<option value="8192">8 ГБ</option>
-					<option value="32768">32 ГБ</option>
+					{#each [[1024, '1 ГБ'], [2048, '2 ГБ'], [4096, '4 ГБ'], [8192, '8 ГБ'], [16384, '16 ГБ'], [32768, '32 ГБ'], [65536, '64 ГБ'], [262144, '256 ГБ']] as [value, label] (value)}
+						<option value={String(value)}>{label}</option>
+					{/each}
 				</select>
+			</div>
+			<div class="row">
+				<div class="grow">
+					<div class="strong">Занято</div>
+					<div class="hint">
+						{cache ? `${size(cache.bytes)} из ${size(data.options.cacheLimitMb * 1024 * 1024)}, треков: ${cache.files}` : 'Подсчёт…'}
+					</div>
+					{#if cache}
+						<div class="meter"><div style:width="{Math.min(100, (cache.bytes / (data.options.cacheLimitMb * 1024 * 1024)) * 100)}%"></div></div>
+					{/if}
+				</div>
+				<button class="btn" onclick={() => invoke('cache_open_dir')} disabled={!inTauri}><Icon name="folder" size={16} />Открыть папку</button>
+				<button class="btn" onclick={clearCache}><Icon name="trash" size={16} />Очистить</button>
 			</div>
 		</div>
 	</section>
@@ -226,6 +395,78 @@
 
 	.limit {
 		width: 140px;
+	}
+
+	.row.sub {
+		padding-top: 4px;
+		padding-left: 34px;
+	}
+
+	.card > .row.sub {
+		border-top: 0;
+	}
+
+	.row.options {
+		flex-wrap: wrap;
+		gap: 6px;
+		padding-top: 0;
+		border-top: 0 !important;
+	}
+
+	.seg {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 6px;
+	}
+
+	.slider {
+		display: grid;
+		grid-template-columns: 1fr 200px 44px;
+	}
+
+	.swatches {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 7px;
+		max-width: 330px;
+	}
+
+	.swatch {
+		width: 26px;
+		height: 26px;
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+		transition: transform 0.15s var(--ease);
+	}
+
+	.swatch:hover {
+		transform: scale(1.12);
+	}
+
+	.swatch.on {
+		box-shadow:
+			0 0 0 2px var(--bg),
+			0 0 0 4px #fff;
+	}
+
+	.swatch.auto {
+		background: conic-gradient(#fb7185, #fbbf24, #4ade80, #2dd4bf, #5aa9ff, #8b7cf6, #e879f9, #fb7185);
+	}
+
+	.meter {
+		height: 4px;
+		margin-top: 8px;
+		border-radius: 999px;
+		background: var(--surface-strong);
+		overflow: hidden;
+	}
+
+	.meter div {
+		height: 100%;
+		background: var(--accent);
+		border-radius: inherit;
 	}
 
 	.keys {

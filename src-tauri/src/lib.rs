@@ -3,13 +3,15 @@ mod media;
 
 use std::path::PathBuf;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Manager, State};
 
+use audio::prefetch::Prefetcher;
 use audio::{Command, DeviceInfo, DspConfig, Engine, EngineHandle, Options, OutputConfig, TrackReq};
 
 struct AppState {
     engine: EngineHandle,
+    prefetch: Prefetcher,
     cache_dir: PathBuf,
 }
 
@@ -73,12 +75,39 @@ async fn list_output_devices(state: State<'_, AppState>) -> Result<Vec<DeviceInf
 struct CacheInfo {
     bytes: u64,
     files: u64,
+    path: String,
 }
 
 #[tauri::command]
 async fn cache_info(state: State<'_, AppState>) -> Result<CacheInfo, String> {
     let (bytes, files) = audio::source::cache_usage(&state.cache_dir);
-    Ok(CacheInfo { bytes, files })
+    Ok(CacheInfo { bytes, files, path: state.cache_dir.to_string_lossy().into_owned() })
+}
+
+/// Download these tracks into the cache in the background, in order. Replaces the previous list.
+#[tauri::command]
+fn cache_prefetch(state: State<AppState>, tracks: Vec<TrackReq>, limit_mb: u64) {
+    state.prefetch.set(tracks, limit_mb * 1024 * 1024);
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CacheKey {
+    cache_key: String,
+    #[serde(default)]
+    suffix: String,
+}
+
+#[tauri::command]
+async fn cache_contains(state: State<'_, AppState>, items: Vec<CacheKey>) -> Result<Vec<bool>, String> {
+    Ok(items.iter().map(|i| audio::source::is_cached(&state.cache_dir, &i.cache_key, &i.suffix)).collect())
+}
+
+#[tauri::command]
+async fn cache_open_dir(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    std::fs::create_dir_all(&state.cache_dir).map_err(|e| e.to_string())?;
+    app.opener().open_path(state.cache_dir.to_string_lossy(), None::<&str>).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -106,7 +135,11 @@ pub fn run() {
             let engine = Engine::spawn(cache_dir.clone(), move |event| {
                 let _ = handle.emit("player", event);
             });
-            app.manage(AppState { engine, cache_dir });
+            let handle = app.handle().clone();
+            let prefetch = Prefetcher::spawn(cache_dir.clone(), move |event| {
+                let _ = handle.emit("cache", event);
+            });
+            app.manage(AppState { engine, prefetch, cache_dir });
             app.manage(media::Media::default());
             media::init_controls(app.handle());
             media::init_tray(app.handle())?;
@@ -126,6 +159,9 @@ pub fn run() {
             list_output_devices,
             cache_info,
             cache_clear,
+            cache_prefetch,
+            cache_contains,
+            cache_open_dir,
             media::media_update,
         ])
         .run(tauri::generate_context!())

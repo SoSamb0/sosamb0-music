@@ -1,13 +1,19 @@
 import { app } from './app.svelte';
 import { fetchLrclib } from './lyrics';
 import { settings } from './settings.svelte';
-import { invoke, onEngineEvent, type EngineEvent, type PlayState, type SignalPath, type TrackReq } from './tauri';
+import { SvelteSet } from 'svelte/reactivity';
+import { invoke, listen, onEngineEvent, type EngineEvent, type PlayState, type SignalPath, type TrackReq } from './tauri';
 import type { Lyrics, Song } from './types';
 
 export interface QueueItem {
 	token: number;
 	song: Song;
 }
+
+type CacheEvent =
+	| { type: 'cached'; key: string }
+	| { type: 'failed'; key: string; message: string }
+	| { type: 'status'; done: number; total: number; active: string[]; limited: boolean };
 
 export interface HistoryEntry {
 	id: string;
@@ -72,11 +78,20 @@ class Player {
 	private saveTimer: ReturnType<typeof setTimeout> | undefined;
 	private started = false;
 
+	/** Cache keys of queue tracks that are fully downloaded. */
+	cached = new SvelteSet<string>();
+	/** Cache keys being downloaded in the background right now. */
+	downloading = new SvelteSet<string>();
+	/** The size limit stopped the queue from being cached completely. */
+	cacheLimited = $state(false);
+	private prefetchTimer: ReturnType<typeof setTimeout> | undefined;
+
 	/** Call whenever a server connection is opened: the first time, and after switching servers. */
 	init() {
 		if (!this.started) {
 			this.started = true;
 			onEngineEvent((e) => this.onEvent(e));
+			listen<CacheEvent>('cache', (e) => this.onCacheEvent(e));
 		}
 		// Demo and real servers use different engines, so settings are sent again each time.
 		this.restore();
@@ -201,12 +216,67 @@ class Player {
 
 	// ---------------------------------------------------------------- transport
 
+	cacheKey(song: Song): string {
+		return `${app.api?.id ?? 'x'}_${song.id}`;
+	}
+
+	private onCacheEvent(e: CacheEvent) {
+		if (e.type === 'cached') {
+			this.cached.add(e.key);
+			this.downloading.delete(e.key);
+		} else if (e.type === 'failed') {
+			this.downloading.delete(e.key);
+		} else {
+			this.downloading.clear();
+			e.active.forEach((k) => this.downloading.add(k));
+			this.cacheLimited = e.limited;
+		}
+	}
+
+	private schedulePrefetch() {
+		clearTimeout(this.prefetchTimer);
+		this.prefetchTimer = setTimeout(() => this.syncPrefetch(), 700);
+	}
+
+	/** Tell the native side which queue tracks to download in the background, in play order. */
+	async syncPrefetch() {
+		clearTimeout(this.prefetchTimer);
+		const limitMb = settings.data.options.cacheLimitMb;
+		const items = [...this.queue];
+		if (!items.length || !app.api || settings.data.demo) {
+			this.cached.clear();
+			return invoke('cache_prefetch', { tracks: [], limitMb });
+		}
+		const flags = await invoke<boolean[]>('cache_contains', {
+			items: items.map((q) => ({ cacheKey: this.cacheKey(q.song), suffix: q.song.suffix ?? '' }))
+		}).catch(() => undefined);
+		this.cached.clear();
+		flags?.forEach((on, i) => on && this.cached.add(this.cacheKey(items[i].song)));
+		if (!settings.data.cache.prefetch) return invoke('cache_prefetch', { tracks: [], limitMb });
+
+		// The playing track first (so seeking within it never waits), then what follows.
+		const start = Math.max(0, this.index);
+		let order = [...items.slice(start), ...(this.repeat === 'all' ? items.slice(0, start) : [])];
+		const ahead = settings.data.cache.ahead;
+		if (ahead > 0) order = order.slice(0, ahead + 1);
+		const seen = new Set<string>();
+		const tracks = order
+			.filter((q) => {
+				const key = this.cacheKey(q.song);
+				if (this.cached.has(key) || seen.has(key)) return false;
+				seen.add(key);
+				return true;
+			})
+			.map((q) => this.request(q));
+		return invoke('cache_prefetch', { tracks, limitMb });
+	}
+
 	private request(item: QueueItem): TrackReq {
 		const song = item.song;
 		return {
 			token: item.token,
 			url: app.api?.streamUrl(song) ?? '',
-			cacheKey: `${app.api?.id ?? 'x'}_${song.id}`,
+			cacheKey: this.cacheKey(song),
 			suffix: song.suffix ?? '',
 			duration: song.duration ?? 0,
 			albumId: song.albumId ?? '',
@@ -454,6 +524,7 @@ class Player {
 	// -------------------------------------------------------------- persistence
 
 	private persist() {
+		this.schedulePrefetch();
 		clearTimeout(this.saveTimer);
 		this.saveTimer = setTimeout(() => {
 			try {
@@ -479,6 +550,7 @@ class Player {
 			this.shuffle = !!saved.shuffle;
 			this.duration = this.current?.duration ?? 0;
 			if (this.current) this.loadLyrics(this.current);
+			this.schedulePrefetch();
 		} catch {
 			// Corrupt saved queue: start empty.
 		}

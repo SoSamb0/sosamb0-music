@@ -3,7 +3,7 @@
 	import { menu } from '$lib/menu.svelte';
 	import { formatQuality, player } from '$lib/player.svelte';
 	import { settings } from '$lib/settings.svelte';
-	import Cover from './Cover.svelte';
+	import Disc from './Disc.svelte';
 	import Icon from './Icon.svelte';
 	import SeekBar from './SeekBar.svelte';
 
@@ -55,14 +55,17 @@
 		]);
 	}
 
+	const roundArt = $derived(
+		settings.data.look.coverShape === 'round' || (settings.data.look.coverShape === 'vinyl' && settings.data.look.vinylEverywhere)
+	);
 	const sleeping = $derived(player.sleepUntil !== null || player.sleepAfterTrack);
 </script>
 
 <footer class="bar">
 	<div class="now">
 		{#if song}
-			<button class="art" onclick={() => (app.nowPlaying = !app.nowPlaying)} aria-label="Развернуть плеер">
-				<Cover id={song.coverArt} size={160} eager />
+			<button class="art" class:round={roundArt} onclick={() => (app.nowPlaying = !app.nowPlaying)} aria-label="Развернуть плеер">
+				<Disc id={song.coverArt} size={160} eager small />
 				<span class="expand"><Icon name={app.nowPlaying ? 'down' : 'up'} size={20} /></span>
 			</button>
 			<div class="meta">
@@ -160,6 +163,10 @@
 		border-radius: 8px;
 		overflow: hidden;
 		box-shadow: 0 4px 14px rgb(0 0 0 / 0.4);
+	}
+
+	.art.round {
+		border-radius: 50%;
 	}
 
 	.expand {

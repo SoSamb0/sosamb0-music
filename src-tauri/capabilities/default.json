@@ -24,6 +24,15 @@
     "core:window:allow-inner-size",
     "core:window:allow-scale-factor",
     "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister-all"
+    "global-shortcut:allow-unregister-all",
+    "core:window:allow-set-position",
+    "core:window:allow-outer-position",
+    "core:window:allow-outer-size",
+    "core:window:allow-monitor-from-point",
+    "core:window:allow-primary-monitor",
+    "core:window:allow-current-monitor",
+    "core:window:allow-maximize",
+    "core:window:allow-center",
+    "core:webview:allow-set-webview-zoom"
   ]
 }

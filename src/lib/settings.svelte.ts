@@ -41,6 +41,28 @@ export function graphicBands(gains: number[] = EQ_PRESETS['Ровно']): EqBand
 	return GRAPHIC_FREQS.map((freq, i) => ({ kind: 'peak', freq, gainDb: gains[i] ?? 0, q: 1.41, enabled: true }));
 }
 
+export interface Look {
+	/** Background of the full-screen player. */
+	npBackground: 'blur' | 'motion' | 'dim' | 'solid';
+	coverShape: 'square' | 'round' | 'vinyl';
+	/** Seconds per turn of the spinning record. */
+	vinylSeconds: number;
+	/** Spin the small cover in the player bar and mini player too. */
+	vinylEverywhere: boolean;
+	/** 'cover' takes the colour from the album art; otherwise a fixed hex colour. */
+	accent: string;
+	appBackdrop: boolean;
+	/** Opacity of the blurred cover behind the whole app, 0..1. */
+	backdropStrength: number;
+	npLyrics: boolean;
+	lyricsSize: 's' | 'm' | 'l';
+	lyricsAlign: 'left' | 'center';
+	scale: number;
+	animations: boolean;
+}
+
+export const ACCENTS = ['#8b7cf6', '#5aa9ff', '#2dd4bf', '#4ade80', '#fbbf24', '#fb923c', '#fb7185', '#e879f9', '#e5e7eb'];
+
 interface Persisted {
 	server: ServerConfig | null;
 	demo: boolean;
@@ -60,6 +82,13 @@ interface Persisted {
 	hotkeys: boolean;
 	scrobble: boolean;
 	discordAppId: string;
+	cache: {
+		/** Download the queue in the background. */
+		prefetch: boolean;
+		/** How many upcoming tracks to cache; 0 means the whole queue. */
+		ahead: number;
+	};
+	look: Look;
 }
 
 const KEY = 'lumen.settings.v1';
@@ -86,7 +115,22 @@ function defaults(): Persisted {
 		closeToTray: false,
 		hotkeys: false,
 		scrobble: true,
-		discordAppId: ''
+		discordAppId: '',
+		cache: { prefetch: true, ahead: 0 },
+		look: {
+			npBackground: 'blur',
+			coverShape: 'square',
+			vinylSeconds: 12,
+			vinylEverywhere: true,
+			accent: 'cover',
+			appBackdrop: true,
+			backdropStrength: 0.42,
+			npLyrics: true,
+			lyricsSize: 'm',
+			lyricsAlign: 'left',
+			scale: 1,
+			animations: true
+		}
 	};
 }
 
@@ -99,7 +143,9 @@ function load(): Persisted {
 			...saved,
 			output: { ...base.output, ...saved.output },
 			options: { ...base.options, ...saved.options },
-			dsp: { ...base.dsp, ...saved.dsp }
+			dsp: { ...base.dsp, ...saved.dsp },
+			cache: { ...base.cache, ...saved.cache },
+			look: { ...base.look, ...saved.look }
 		};
 	} catch {
 		return base;

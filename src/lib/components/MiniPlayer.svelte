@@ -2,7 +2,8 @@
 	import { app } from '$lib/app.svelte';
 	import { player } from '$lib/player.svelte';
 	import { setMiniMode } from '$lib/window';
-	import Cover from './Cover.svelte';
+	import { settings } from '$lib/settings.svelte';
+	import Disc from './Disc.svelte';
 	import Icon from './Icon.svelte';
 	import SeekBar from './SeekBar.svelte';
 
@@ -15,7 +16,7 @@
 </script>
 
 <div class="mini" data-tauri-drag-region>
-	<div class="art"><Cover id={song?.coverArt} size={200} eager /></div>
+	<div class="art" class:round={settings.data.look.coverShape !== 'square'}><Disc id={song?.coverArt} size={200} eager small /></div>
 	<div class="body">
 		<div class="top">
 			<div class="text">
@@ -52,6 +53,10 @@
 		border-radius: 10px;
 		overflow: hidden;
 		pointer-events: none;
+	}
+
+	.art.round {
+		border-radius: 50%;
 	}
 
 	.body {

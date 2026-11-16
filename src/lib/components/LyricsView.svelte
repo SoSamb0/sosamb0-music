@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { activeLine } from '$lib/lyrics';
 	import { player } from '$lib/player.svelte';
+	import { settings } from '$lib/settings.svelte';
 	import Icon from './Icon.svelte';
 
 	let { large = false }: { large?: boolean } = $props();
@@ -47,7 +48,7 @@
 	}
 </script>
 
-<div class="lyrics" class:large>
+<div class="lyrics size-{settings.data.look.lyricsSize}" class:large class:center={settings.data.look.lyricsAlign === 'center'}>
 	{#if player.lyricsLoading}
 		<div class="empty"><span class="spinner"></span></div>
 	{:else if !lyrics || lyrics.lines.length === 0}
@@ -156,6 +157,27 @@
 	.large .line {
 		font-size: 30px;
 		padding: 10px 0;
+	}
+
+	.size-s .line {
+		font-size: 16px;
+	}
+
+	.size-l .line {
+		font-size: 24px;
+	}
+
+	.size-s.large .line {
+		font-size: 23px;
+	}
+
+	.size-l.large .line {
+		font-size: 38px;
+	}
+
+	.center .line {
+		text-align: center;
+		transform-origin: center;
 	}
 
 	.large .line.plain {

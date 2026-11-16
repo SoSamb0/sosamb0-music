@@ -19,6 +19,7 @@ pub mod dsp;
 pub mod engine;
 #[cfg(windows)]
 pub mod output;
+pub mod prefetch;
 pub mod resampler;
 pub mod source;
 

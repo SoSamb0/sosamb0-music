@@ -42,6 +42,10 @@
 		clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
 		min: '<path d="M5 12h14"/>',
 		max: '<rect x="5" y="5" width="14" height="14" rx="2"/>',
+		download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+		saved: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+		folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+		palette: '<circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A5.7 5.7 0 0 0 22 9.7C22 5.4 17.5 2 12 2Z"/>',
 		wave: '<path d="M2 12h2"/><path d="M7 7v10"/><path d="M12 3v18"/><path d="M17 8v8"/><path d="M22 12h-2"/>'
 	};
 </script>

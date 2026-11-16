@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { app } from '$lib/app.svelte';
 	import { accentFromImage } from '$lib/color';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
@@ -17,7 +17,7 @@
 	import { initNative, isQuitting } from '$lib/native';
 	import { player } from '$lib/player.svelte';
 	import { settings } from '$lib/settings.svelte';
-	import { onCloseRequested } from '$lib/window';
+	import { onCloseRequested, setZoom } from '$lib/window';
 	import Albums from '$lib/views/Albums.svelte';
 	import AlbumView from '$lib/views/AlbumView.svelte';
 	import Artists from '$lib/views/Artists.svelte';
@@ -35,7 +35,9 @@
 
 	const route = $derived(app.route);
 	const song = $derived(player.current);
-	const backdrop = $derived(app.api?.coverUrl(song?.coverArt, 300) ?? '');
+	const cover = $derived(app.api?.coverUrl(song?.coverArt, 300) ?? '');
+	const look = $derived(settings.data.look);
+	const backdrop = $derived(look.appBackdrop ? cover : '');
 
 	onMount(() => {
 		app.restore();
@@ -45,19 +47,35 @@
 
 	// The engine and the saved queue come up once we know which server we are talking to.
 	$effect(() => {
-		if (app.api) player.init();
+		// Only the server connection should trigger this, not the queue state init() touches.
+		if (app.api) untrack(() => player.init());
 	});
 
-	// Tint the whole interface with the colour of the current cover.
+	// Tint the whole interface with the colour of the current cover, or a fixed colour.
 	$effect(() => {
-		const url = backdrop;
+		const root = document.documentElement.style;
+		const fixed = look.accent;
+		if (fixed !== 'cover') {
+			const n = parseInt(fixed.slice(1), 16);
+			root.setProperty('--accent-rgb', `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`);
+			return;
+		}
+		const url = cover;
 		let stale = false;
 		accentFromImage(url).then(([r, g, b]) => {
-			if (!stale) document.documentElement.style.setProperty('--accent-rgb', `${r} ${g} ${b}`);
+			if (!stale) root.setProperty('--accent-rgb', `${r} ${g} ${b}`);
 		});
 		return () => {
 			stale = true;
 		};
+	});
+
+	$effect(() => {
+		document.documentElement.dataset.motion = look.animations ? 'on' : 'off';
+	});
+
+	$effect(() => {
+		setZoom(look.scale);
 	});
 
 	// Each page starts at the top.
@@ -118,7 +136,7 @@
 {:else}
 	<div class="app">
 		{#if backdrop}
-			{#key backdrop}<img class="backdrop" src={backdrop} alt="" />{/key}
+			{#key backdrop}<img class="backdrop" src={backdrop} alt="" style:--strength={look.backdropStrength} />{/key}
 		{/if}
 		<div class="shade"></div>
 
@@ -180,7 +198,7 @@
 		height: 124%;
 		object-fit: cover;
 		filter: blur(90px) saturate(1.7);
-		opacity: 0.42;
+		opacity: var(--strength, 0.42);
 		pointer-events: none;
 		animation: backdrop-in 1.2s ease;
 	}

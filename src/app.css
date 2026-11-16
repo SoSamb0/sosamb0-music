@@ -387,8 +387,16 @@ input[type='range']:hover::-webkit-slider-thumb {
 	}
 }
 
+/* "Анимации интерфейса" switched off. Loading spinners and the record keep turning. */
+html[data-motion='off'] *:not(.spinner):not(.face),
+html[data-motion='off'] *::before,
+html[data-motion='off'] *::after {
+	animation: none !important;
+	transition: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
-	*,
+	*:not(.face),
 	*::before,
 	*::after {
 		animation-duration: 0.01ms !important;
