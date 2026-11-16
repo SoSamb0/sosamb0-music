@@ -3,7 +3,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { applyHotkeys, GLOBAL_HOTKEYS } from '$lib/native';
 	import { player } from '$lib/player.svelte';
-	import { ACCENTS, settings, type Look } from '$lib/settings.svelte';
+	import { ACCENTS, DEFAULT_DISCORD_APP_ID, settings, type Look } from '$lib/settings.svelte';
 	import { inTauri, invoke } from '$lib/tauri';
 
 	const data = $derived(settings.data);
@@ -147,31 +147,22 @@
 		<div class="card">
 			<div class="row">
 				<div class="grow">
-					<div class="strong">Показывать, что играет</div>
-					<div class="hint">Статус «Слушает» с названием трека, исполнителем и временем в вашем профиле Discord.</div>
+					<div class="strong">Показывать в Discord, что играет</div>
+					<div class="hint">Статус «Слушает» с названием трека, исполнителем, обложкой и временем в вашем профиле. Нужен запущенный Discord на этом компьютере.</div>
 				</div>
 				<button class="switch" role="switch" aria-checked={data.discord.enabled} aria-label="Статус в Discord" onclick={() => setDiscord('enabled', !data.discord.enabled)} disabled={data.demo}></button>
 			</div>
 			{#if data.discord.enabled}
 				<div class="row sub">
-					<div class="grow">
-						<div class="strong">ID приложения</div>
-						<div class="hint">
-							Один раз: откройте <button class="link" onclick={openPortal}>портал разработчиков Discord</button>, нажмите
-							«New Application», назовите его, например, «Lumen» — это имя появится в статусе. Скопируйте Application ID
-							и вставьте сюда. Иконку приложения можно загрузить там же — она будет видна, если обложка не найдётся.
-						</div>
+					<div class="grow discord-state">
+						{#if settings.discordStatus?.connected}
+							<span class="dot on"></span><span>Подключено к Discord</span>
+							{#if settings.discordStatus.cover}<img src={settings.discordStatus.cover} alt="" class="thumb" />{/if}
+							{#if settings.discordStatus.message}<span class="muted"> · {settings.discordStatus.message}</span>{/if}
+						{:else}
+							<span class="dot"></span><span class="muted">{settings.discordStatus?.message ?? 'Подключение…'} · повтор каждые 15 секунд</span>
+						{/if}
 					</div>
-					<input
-						class="field appid"
-						value={data.discord.appId}
-						placeholder="123456789012345678"
-						inputmode="numeric"
-						spellcheck="false"
-						onkeydown={(e) => e.stopPropagation()}
-						onchange={(e) => setDiscord('appId', e.currentTarget.value.replace(/\D/g, ''))}
-						aria-label="ID приложения Discord"
-					/>
 				</div>
 				<div class="row sub">
 					<div class="grow">
@@ -188,19 +179,26 @@
 					<div class="grow"><div class="strong">Скрывать статус на паузе</div></div>
 					<button class="switch" role="switch" aria-checked={data.discord.hidePaused} aria-label="Скрывать на паузе" onclick={() => setDiscord('hidePaused', !data.discord.hidePaused)}></button>
 				</div>
-				<div class="row sub">
-					<div class="grow discord-state">
-						{#if !data.discord.appId}
-							<span class="dot"></span><span class="muted">Вставьте ID приложения</span>
-						{:else if settings.discordStatus?.connected}
-							<span class="dot on"></span><span>Подключено к Discord</span>
-							{#if settings.discordStatus.cover}<img src={settings.discordStatus.cover} alt="" class="thumb" />{/if}
-							{#if settings.discordStatus.message}<span class="muted"> · {settings.discordStatus.message}</span>{/if}
-						{:else}
-							<span class="dot"></span><span class="muted">{settings.discordStatus?.message ?? 'Подключение…'} · повтор каждые 15 секунд</span>
-						{/if}
+				<details class="row sub advanced" open={!!data.discord.appId && data.discord.appId !== DEFAULT_DISCORD_APP_ID}>
+					<summary class="muted">Дополнительно: своё приложение Discord</summary>
+					<div class="adv">
+						<div class="hint">
+							По умолчанию статус идёт от приложения «Lumen». Чтобы в статусе было другое имя, создайте своё приложение на
+							<button class="link" onclick={openPortal}>портале разработчиков Discord</button> и вставьте его Application ID.
+							Пустое поле — приложение Lumen.
+						</div>
+						<input
+							class="field appid"
+							value={data.discord.appId === DEFAULT_DISCORD_APP_ID ? '' : data.discord.appId}
+							placeholder="Lumen (по умолчанию)"
+							inputmode="numeric"
+							spellcheck="false"
+							onkeydown={(e) => e.stopPropagation()}
+							onchange={(e) => setDiscord('appId', e.currentTarget.value.replace(/\D/g, ''))}
+							aria-label="Свой ID приложения Discord"
+						/>
 					</div>
-				</div>
+				</details>
 			{/if}
 		</div>
 	</section>
@@ -534,7 +532,24 @@
 		background: conic-gradient(#fb7185, #fbbf24, #4ade80, #2dd4bf, #5aa9ff, #8b7cf6, #e879f9, #fb7185);
 	}
 
+	.advanced {
+		display: block;
+	}
+
+	.advanced summary {
+		cursor: pointer;
+		font-size: 13px;
+	}
+
+	.adv {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		margin-top: 10px;
+	}
+
 	.appid {
+		flex: none;
 		width: 210px;
 		font-variant-numeric: tabular-nums;
 	}

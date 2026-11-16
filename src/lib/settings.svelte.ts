@@ -61,6 +61,12 @@ export interface Look {
 	animations: boolean;
 }
 
+/**
+ * The "Lumen" application registered on discord.com/developers. An application id is a public
+ * identifier (it appears in every status it shows), so shipping it in the app is safe.
+ */
+export const DEFAULT_DISCORD_APP_ID = '1571966119789465711';
+
 export const ACCENTS = ['#8b7cf6', '#5aa9ff', '#2dd4bf', '#4ade80', '#fbbf24', '#fb923c', '#fb7185', '#e879f9', '#e5e7eb'];
 
 interface Persisted {
@@ -84,6 +90,7 @@ interface Persisted {
 	discordAppId: string;
 	discord: {
 		enabled: boolean;
+		/** Own Discord application id; empty uses Lumen's. */
 		appId: string;
 		/** Find the cover in public catalogues so Discord can show it. */
 		covers: boolean;
@@ -210,7 +217,12 @@ class Settings {
 		this.save();
 		const d = this.data.discord;
 		return invoke('discord_configure', {
-			config: { enabled: d.enabled && !this.data.demo, appId: d.appId.trim(), covers: d.covers, hidePaused: d.hidePaused }
+			config: {
+				enabled: d.enabled && !this.data.demo,
+				appId: d.appId.trim() || DEFAULT_DISCORD_APP_ID,
+				covers: d.covers,
+				hidePaused: d.hidePaused
+			}
 		});
 	}
 

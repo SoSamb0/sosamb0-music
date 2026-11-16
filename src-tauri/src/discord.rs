@@ -492,7 +492,8 @@ mod ipc {
         #[test]
         #[ignore]
         fn live_handshake() {
-            match Conn::open("100000000000000001") {
+            let id = std::env::var("LUMEN_DISCORD_ID").unwrap_or_else(|_| "100000000000000001".into());
+            match Conn::open(&id) {
                 Ok(_) => println!("handshake accepted"),
                 Err(e) => println!("handshake refused: {e}"),
             }
