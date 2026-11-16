@@ -1,0 +1,49 @@
+[package]
+name = "lumen"
+version = "0.1.0"
+description = "Lumen - hi-fi Navidrome player"
+authors = ["you"]
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "lumen_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# No id3v1/ape: those tags sit at the end of the file and probing for them would force a
+# progressive download to finish before playback could start.
+symphonia = { version = "0.6.1", default-features = false, features = ["opt-simd", "all-codecs", "all-formats", "id3v2"] }
+rubato = "5.1.0"
+rtrb = "0.4.1"
+ureq = "3.5.2"
+crossbeam-channel = "0.5.17"
+parking_lot = "0.13.0"
+souvlaki = "0.9.3"
+tauri-plugin-global-shortcut = "2.4.1"
+tauri-plugin-single-instance = "2.5.5"
+
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+[target."cfg(windows)".dependencies]
+wasapi = "0.27.0"
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_System_Threading"] }
+
