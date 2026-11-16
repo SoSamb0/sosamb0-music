@@ -115,12 +115,15 @@ class Player {
 				if (this.state === 'playing' && e.state === 'playing') {
 					this.listened += Math.min(1, (now - this.positionAt) / 1000);
 				}
+				const wasState = this.state;
 				this.state = e.state;
 				this.position = e.position;
 				this.positionAt = now;
 				if (e.duration > 0) this.duration = e.duration;
 				this.buffered = e.buffered;
 				this.maybeScrobble();
+				// Real playback start (after loading or buffering) fixes the timer shown in Discord.
+				if (wasState !== e.state && (e.state === 'playing' || e.state === 'paused')) this.notifyDiscord();
 				if (this.sleepUntil && Date.now() >= this.sleepUntil) {
 					this.sleepUntil = null;
 					this.pause();
@@ -414,6 +417,7 @@ class Player {
 		this.position = target;
 		this.positionAt = performance.now();
 		invoke('player_seek', { position: target });
+		this.notifyDiscord();
 	}
 
 	setVolume(volume: number) {
@@ -506,7 +510,39 @@ class Player {
 		this.syncNext();
 	}
 
+	private albumMbids = new Map<string, string>();
+	private discordTimer: ReturnType<typeof setTimeout> | undefined;
+
+	/** Send what is playing to Discord. Debounced; the native side also rate-limits. */
+	notifyDiscord() {
+		clearTimeout(this.discordTimer);
+		this.discordTimer = setTimeout(async () => {
+			const song = this.current;
+			if (!settings.data.discord.enabled || settings.data.demo) return;
+			if (!song || this.state === 'stopped') return invoke('discord_update', { now: null });
+			let mbid = song.albumId ? this.albumMbids.get(song.albumId) : '';
+			if (mbid === undefined && song.albumId) {
+				const album = await app.api?.album(song.albumId).catch(() => null);
+				mbid = album?.musicBrainzId ?? '';
+				this.albumMbids.set(song.albumId, mbid);
+			}
+			if (song !== this.current) return;
+			invoke('discord_update', {
+				now: {
+					title: song.title,
+					artist: song.artist ?? '',
+					album: song.album ?? '',
+					albumMbid: mbid ?? '',
+					duration: this.duration || song.duration || 0,
+					position: this.livePosition(),
+					playing: this.state !== 'paused'
+				}
+			});
+		}, 400);
+	}
+
 	private notifyMedia() {
+		this.notifyDiscord();
 		const song = this.current;
 		invoke('media_update', {
 			info: {

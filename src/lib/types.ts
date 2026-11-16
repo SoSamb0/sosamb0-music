@@ -30,6 +30,8 @@ export interface Song {
 export interface Album {
 	id: string;
 	name: string;
+	/** MusicBrainz release id (OpenSubsonic). */
+	musicBrainzId?: string;
 	artist?: string;
 	artistId?: string;
 	coverArt?: string;

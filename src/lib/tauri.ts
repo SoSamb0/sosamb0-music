@@ -207,7 +207,7 @@ export function useSimulatedEngine(on: boolean) {
 }
 
 export async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-	const audio = cmd.startsWith('player_') || cmd === 'list_output_devices' || cmd.startsWith('cache_');
+	const audio = cmd.startsWith('player_') || cmd === 'list_output_devices' || cmd.startsWith('cache_') || cmd.startsWith('discord_');
 	if (audio && simulated) return sim.invoke(cmd, args) as T;
 	if (!inTauri) return undefined as T;
 	return tauriInvoke<T>(cmd, args);

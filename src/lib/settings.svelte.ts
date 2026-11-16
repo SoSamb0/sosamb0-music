@@ -82,6 +82,13 @@ interface Persisted {
 	hotkeys: boolean;
 	scrobble: boolean;
 	discordAppId: string;
+	discord: {
+		enabled: boolean;
+		appId: string;
+		/** Find the cover in public catalogues so Discord can show it. */
+		covers: boolean;
+		hidePaused: boolean;
+	};
 	cache: {
 		/** Download the queue in the background. */
 		prefetch: boolean;
@@ -116,6 +123,7 @@ function defaults(): Persisted {
 		hotkeys: false,
 		scrobble: true,
 		discordAppId: '',
+		discord: { enabled: false, appId: '', covers: true, hidePaused: false },
 		cache: { prefetch: true, ahead: 0 },
 		look: {
 			npBackground: 'blur',
@@ -145,6 +153,7 @@ function load(): Persisted {
 			options: { ...base.options, ...saved.options },
 			dsp: { ...base.dsp, ...saved.dsp },
 			cache: { ...base.cache, ...saved.cache },
+			discord: { ...base.discord, ...saved.discord },
 			look: { ...base.look, ...saved.look }
 		};
 	} catch {
@@ -194,7 +203,19 @@ class Settings {
 	}
 
 	/** Send every audio setting to the engine (at startup). */
+	/** Latest connection report from the Discord integration. */
+	discordStatus = $state<{ connected: boolean; message: string | null; cover: string | null } | null>(null);
+
+	pushDiscord() {
+		this.save();
+		const d = this.data.discord;
+		return invoke('discord_configure', {
+			config: { enabled: d.enabled && !this.data.demo, appId: d.appId.trim(), covers: d.covers, hidePaused: d.hidePaused }
+		});
+	}
+
 	async pushAll() {
+		await this.pushDiscord();
 		await this.pushOutput();
 		await this.pushOptions();
 		await this.pushDsp();

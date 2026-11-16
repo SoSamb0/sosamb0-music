@@ -28,6 +28,22 @@
 		app.toast('Кэш очищен');
 	}
 
+	function setDiscord<K extends keyof typeof settings.data.discord>(key: K, value: (typeof settings.data.discord)[K]) {
+		settings.data.discord[key] = value;
+		settings.pushDiscord();
+		player.notifyDiscord();
+	}
+
+	async function openPortal() {
+		const url = 'https://discord.com/developers/applications';
+		if (inTauri) {
+			const { openUrl } = await import('@tauri-apps/plugin-opener');
+			await openUrl(url).catch(() => app.toast('Не удалось открыть браузер', 'error'));
+		} else {
+			window.open(url, '_blank');
+		}
+	}
+
 	function setLook<K extends keyof Look>(key: K, value: Look[K]) {
 		settings.data.look[key] = value;
 		settings.save();
@@ -123,6 +139,69 @@
 				</div>
 				<button class="switch" role="switch" aria-checked={data.scrobble} aria-label="Скробблинг" onclick={() => toggle('scrobble')}></button>
 			</div>
+		</div>
+	</section>
+
+	<section>
+		<h2>Discord</h2>
+		<div class="card">
+			<div class="row">
+				<div class="grow">
+					<div class="strong">Показывать, что играет</div>
+					<div class="hint">Статус «Слушает» с названием трека, исполнителем и временем в вашем профиле Discord.</div>
+				</div>
+				<button class="switch" role="switch" aria-checked={data.discord.enabled} aria-label="Статус в Discord" onclick={() => setDiscord('enabled', !data.discord.enabled)} disabled={data.demo}></button>
+			</div>
+			{#if data.discord.enabled}
+				<div class="row sub">
+					<div class="grow">
+						<div class="strong">ID приложения</div>
+						<div class="hint">
+							Один раз: откройте <button class="link" onclick={openPortal}>портал разработчиков Discord</button>, нажмите
+							«New Application», назовите его, например, «Lumen» — это имя появится в статусе. Скопируйте Application ID
+							и вставьте сюда. Иконку приложения можно загрузить там же — она будет видна, если обложка не найдётся.
+						</div>
+					</div>
+					<input
+						class="field appid"
+						value={data.discord.appId}
+						placeholder="123456789012345678"
+						inputmode="numeric"
+						spellcheck="false"
+						onkeydown={(e) => e.stopPropagation()}
+						onchange={(e) => setDiscord('appId', e.currentTarget.value.replace(/\D/g, ''))}
+						aria-label="ID приложения Discord"
+					/>
+				</div>
+				<div class="row sub">
+					<div class="grow">
+						<div class="strong">Обложка в статусе</div>
+						<div class="hint">
+							Discord загружает картинку сам, а ваш сервер ему недоступен. Поэтому Lumen ищет тот же альбом в открытых
+							каталогах — MusicBrainz, Apple Music, Deezer — и показывает их картинку. Туда уходят только название
+							альбома и исполнителя; сервер остаётся закрытым.
+						</div>
+					</div>
+					<button class="switch" role="switch" aria-checked={data.discord.covers} aria-label="Искать обложку" onclick={() => setDiscord('covers', !data.discord.covers)}></button>
+				</div>
+				<div class="row sub">
+					<div class="grow"><div class="strong">Скрывать статус на паузе</div></div>
+					<button class="switch" role="switch" aria-checked={data.discord.hidePaused} aria-label="Скрывать на паузе" onclick={() => setDiscord('hidePaused', !data.discord.hidePaused)}></button>
+				</div>
+				<div class="row sub">
+					<div class="grow discord-state">
+						{#if !data.discord.appId}
+							<span class="dot"></span><span class="muted">Вставьте ID приложения</span>
+						{:else if settings.discordStatus?.connected}
+							<span class="dot on"></span><span>Подключено к Discord</span>
+							{#if settings.discordStatus.cover}<img src={settings.discordStatus.cover} alt="" class="thumb" />{/if}
+							{#if settings.discordStatus.message}<span class="muted"> · {settings.discordStatus.message}</span>{/if}
+						{:else}
+							<span class="dot"></span><span class="muted">{settings.discordStatus?.message ?? 'Подключение…'} · повтор каждые 15 секунд</span>
+						{/if}
+					</div>
+				</div>
+			{/if}
 		</div>
 	</section>
 
@@ -453,6 +532,43 @@
 
 	.swatch.auto {
 		background: conic-gradient(#fb7185, #fbbf24, #4ade80, #2dd4bf, #5aa9ff, #8b7cf6, #e879f9, #fb7185);
+	}
+
+	.appid {
+		width: 210px;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.link {
+		color: var(--accent);
+		text-decoration: underline;
+	}
+
+	.discord-state {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+	}
+
+	.dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--faint);
+		flex: none;
+	}
+
+	.dot.on {
+		background: #5865f2;
+		box-shadow: 0 0 8px #5865f2;
+	}
+
+	.thumb {
+		width: 28px;
+		height: 28px;
+		border-radius: 5px;
+		object-fit: cover;
 	}
 
 	.meter {

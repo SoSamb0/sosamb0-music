@@ -1,4 +1,5 @@
 mod audio;
+mod discord;
 mod media;
 
 use std::path::PathBuf;
@@ -11,8 +12,19 @@ use audio::{Command, DeviceInfo, DspConfig, Engine, EngineHandle, Options, Outpu
 
 struct AppState {
     engine: EngineHandle,
+    discord: discord::Discord,
     prefetch: Prefetcher,
     cache_dir: PathBuf,
+}
+
+#[tauri::command]
+fn discord_configure(state: State<AppState>, config: discord::DiscordConfig) {
+    state.discord.configure(config);
+}
+
+#[tauri::command]
+fn discord_update(state: State<AppState>, now: Option<discord::NowPlaying>) {
+    state.discord.update(now);
 }
 
 #[tauri::command]
@@ -139,7 +151,11 @@ pub fn run() {
             let prefetch = Prefetcher::spawn(cache_dir.clone(), move |event| {
                 let _ = handle.emit("cache", event);
             });
-            app.manage(AppState { engine, prefetch, cache_dir });
+            let handle = app.handle().clone();
+            let discord = discord::Discord::spawn(move |status| {
+                let _ = handle.emit("discord", status);
+            });
+            app.manage(AppState { engine, discord, prefetch, cache_dir });
             app.manage(media::Media::default());
             media::init_controls(app.handle());
             media::init_tray(app.handle())?;
@@ -160,6 +176,8 @@ pub fn run() {
             cache_info,
             cache_clear,
             cache_prefetch,
+            discord_configure,
+            discord_update,
             cache_contains,
             cache_open_dir,
             media::media_update,

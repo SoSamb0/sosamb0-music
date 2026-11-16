@@ -49,6 +49,7 @@ export async function initNative() {
 	if (!inTauri) return;
 	await listen<string>('media-key', runAction);
 	await listen<string>('tray', runAction);
+	await listen<typeof settings.discordStatus>('discord', (status) => (settings.discordStatus = status));
 	await applyHotkeys();
 }
 
