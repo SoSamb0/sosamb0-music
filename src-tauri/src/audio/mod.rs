@@ -1,4 +1,4 @@
-//! Lumen audio engine.
+//! SoSamb0 Music audio engine.
 //!
 //! Signal flow:
 //!

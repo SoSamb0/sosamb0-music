@@ -52,7 +52,7 @@ pub fn init_controls(app: &AppHandle) {
         None
     };
 
-    let config = PlatformConfig { display_name: "Lumen", dbus_name: "lumen", hwnd };
+    let config = PlatformConfig { display_name: "SoSamb0 Music", dbus_name: "lumen", hwnd };
     let Ok(mut controls) = MediaControls::new(config) else { return };
     let handle = app.clone();
     let attached = controls.attach(move |event| {
@@ -113,13 +113,13 @@ pub fn init_tray(app: &AppHandle) -> tauri::Result<()> {
             &item("next", "Следующий трек")?,
             &item("previous", "Предыдущий трек")?,
             &PredefinedMenuItem::separator(app)?,
-            &item("show", "Открыть Lumen")?,
+            &item("show", "Открыть SoSamb0 Music")?,
             &item("quit", "Выйти")?,
         ],
     )?;
 
     let mut tray = TrayIconBuilder::with_id("main")
-        .tooltip("Lumen")
+        .tooltip("SoSamb0 Music")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {

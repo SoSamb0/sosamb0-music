@@ -291,7 +291,7 @@ pub fn fetch(req: &TrackReq, cache_dir: &Path, cache_limit: u64, reader: bool, k
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .timeout_connect(Some(Duration::from_secs(10)))
         .timeout_recv_response(Some(Duration::from_secs(20)))
-        .user_agent("Lumen")
+        .user_agent("SoSamb0-Music")
         .build()
         .into();
     let resp = agent.get(&req.url).call().map_err(|e| format!("request failed: {e}"))?;

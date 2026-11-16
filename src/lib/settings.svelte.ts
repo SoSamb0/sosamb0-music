@@ -62,7 +62,7 @@ export interface Look {
 }
 
 /**
- * The "Lumen" application registered on discord.com/developers. An application id is a public
+ * The "SoSamb0 Music" application registered on discord.com/developers. An application id is a public
  * identifier (it appears in every status it shows), so shipping it in the app is safe.
  */
 export const DEFAULT_DISCORD_APP_ID = '1571966119789465711';
@@ -90,7 +90,7 @@ interface Persisted {
 	discordAppId: string;
 	discord: {
 		enabled: boolean;
-		/** Own Discord application id; empty uses Lumen's. */
+		/** Own Discord application id; empty uses SoSamb0 Music's. */
 		appId: string;
 		/** Find the cover in public catalogues so Discord can show it. */
 		covers: boolean;

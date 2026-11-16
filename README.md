@@ -1,4 +1,4 @@
-# Lumen
+# SoSamb0 Music
 
 Hi-fi desktop client for [Navidrome](https://www.navidrome.org/) (and other Subsonic-compatible servers).
 Tauri 2 + Svelte 5 for the interface, a native Rust engine for the sound.

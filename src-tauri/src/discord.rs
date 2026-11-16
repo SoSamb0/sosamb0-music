@@ -253,7 +253,7 @@ impl<E: Fn(DiscordStatus)> Worker<E> {
             let start = (now_ms - (now.position * 1000.0) as i64) / 1000 * 1000;
             a["timestamps"] = json!({ "start": start, "end": start + (now.duration * 1000.0) as i64 });
         }
-        let mut assets = json!({ "large_text": field(&now.album, "Lumen") });
+        let mut assets = json!({ "large_text": field(&now.album, "SoSamb0 Music") });
         if let Some(url) = &self.cover {
             assets["large_image"] = json!(url);
         }
@@ -289,7 +289,7 @@ pub mod covers {
     fn agent() -> ureq::Agent {
         ureq::Agent::config_builder()
             .timeout_global(Some(Duration::from_secs(6)))
-            .user_agent("Lumen/0.1 (desktop music player)")
+            .user_agent("SoSamb0-Music/0.1 (desktop music player)")
             .build()
             .into()
     }

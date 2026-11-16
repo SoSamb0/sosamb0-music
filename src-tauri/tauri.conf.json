@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Lumen",
+  "productName": "SoSamb0 Music",
   "version": "0.1.0",
   "identifier": "app.lumen.player",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Lumen",
+        "title": "SoSamb0 Music",
         "width": 1320,
         "height": 840,
         "minWidth": 940,
@@ -39,5 +39,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
-  }
+  },
+  "mainBinaryName": "SoSamb0 Music"
 }

@@ -49,7 +49,7 @@
 <nav class="sidebar">
 	<div class="brand" data-tauri-drag-region>
 		<span class="logo" aria-hidden="true"></span>
-		<span class="name">Lumen</span>
+		<span class="name">SoSamb0 Music</span>
 	</div>
 
 	<div class="links">

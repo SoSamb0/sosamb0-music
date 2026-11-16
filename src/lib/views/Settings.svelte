@@ -168,7 +168,7 @@
 					<div class="grow">
 						<div class="strong">Обложка в статусе</div>
 						<div class="hint">
-							Discord загружает картинку сам, а ваш сервер ему недоступен. Поэтому Lumen ищет тот же альбом в открытых
+							Discord загружает картинку сам, а ваш сервер ему недоступен. Поэтому SoSamb0 Music ищет тот же альбом в открытых
 							каталогах — MusicBrainz, Apple Music, Deezer — и показывает их картинку. Туда уходят только название
 							альбома и исполнителя; сервер остаётся закрытым.
 						</div>
@@ -183,14 +183,14 @@
 					<summary class="muted">Дополнительно: своё приложение Discord</summary>
 					<div class="adv">
 						<div class="hint">
-							По умолчанию статус идёт от приложения «Lumen». Чтобы в статусе было другое имя, создайте своё приложение на
+							По умолчанию статус идёт от приложения «SoSamb0 Music». Чтобы в статусе было другое имя, создайте своё приложение на
 							<button class="link" onclick={openPortal}>портале разработчиков Discord</button> и вставьте его Application ID.
-							Пустое поле — приложение Lumen.
+							Пустое поле — приложение SoSamb0 Music.
 						</div>
 						<input
 							class="field appid"
 							value={data.discord.appId === DEFAULT_DISCORD_APP_ID ? '' : data.discord.appId}
-							placeholder="Lumen (по умолчанию)"
+							placeholder="SoSamb0 Music (по умолчанию)"
 							inputmode="numeric"
 							spellcheck="false"
 							onkeydown={(e) => e.stopPropagation()}

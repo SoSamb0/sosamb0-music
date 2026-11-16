@@ -183,5 +183,5 @@ pub fn run() {
             media::media_update,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Lumen");
+        .expect("error while running SoSamb0 Music");
 }

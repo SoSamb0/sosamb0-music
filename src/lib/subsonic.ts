@@ -10,7 +10,7 @@ export interface ServerConfig {
 	salt: string;
 }
 
-const CLIENT = 'Lumen';
+const CLIENT = 'SoSamb0 Music';
 const API_VERSION = '1.16.1';
 
 export function makeServerConfig(url: string, username: string, password: string): ServerConfig {

@@ -30,7 +30,7 @@
 
 	<form class="card" onsubmit={submit}>
 		<span class="logo" aria-hidden="true"></span>
-		<h1>Lumen</h1>
+		<h1>SoSamb0 Music</h1>
 		<p class="muted lead">Подключитесь к своему серверу Navidrome</p>
 
 		<label>
