@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { app } from '$lib/app.svelte';
-	import AlbumCard from '$lib/components/AlbumCard.svelte';
+	import Shelf from '$lib/components/Shelf.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { loader } from '$lib/loader.svelte';
 	import { player } from '$lib/player.svelte';
@@ -57,15 +57,7 @@
 		{#each SHELVES as shelf, i (shelf.type)}
 			{@const albums = shelves.value?.[i] ?? []}
 			{#if albums.length}
-				<div class="section-head">
-					<h2>{shelf.title}</h2>
-					{#if shelf.type === 'random'}
-						<button class="btn small" onclick={() => shelves.reload()}>Обновить</button>
-					{/if}
-				</div>
-				<div class="shelf">
-					{#each albums as album (album.id)}<div class="cell"><AlbumCard {album} /></div>{/each}
-				</div>
+				<Shelf title={shelf.title} {albums} onrefresh={shelf.type === 'random' ? () => shelves.reload() : undefined} />
 			{/if}
 		{/each}
 		{#if shelves.value?.every((s) => s.length === 0)}
@@ -128,24 +120,4 @@
 		color: var(--muted);
 	}
 
-	.shelf {
-		display: grid;
-		grid-auto-flow: column;
-		grid-auto-columns: minmax(150px, 172px);
-		gap: 18px;
-		overflow-x: auto;
-		padding: 6px 4px 14px;
-		margin: -6px -4px 0;
-		scroll-snap-type: x proximity;
-		scrollbar-width: none;
-	}
-
-	.shelf::-webkit-scrollbar {
-		display: none;
-	}
-
-	.cell {
-		scroll-snap-align: start;
-		min-width: 0;
-	}
 </style>

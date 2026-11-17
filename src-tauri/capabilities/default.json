@@ -33,6 +33,7 @@
     "core:window:allow-current-monitor",
     "core:window:allow-maximize",
     "core:window:allow-center",
-    "core:webview:allow-set-webview-zoom"
+    "core:webview:allow-set-webview-zoom",
+    "core:window:allow-destroy"
   ]
 }

@@ -99,8 +99,10 @@ export interface MusicApi {
 	playlist(id: string): Promise<Playlist>;
 	createPlaylist(name: string, songIds: string[]): Promise<void>;
 	addToPlaylist(id: string, songIds: string[]): Promise<void>;
-	removeFromPlaylist(id: string, index: number): Promise<void>;
+	/** Remove entries by their position in the playlist. */
+	removeFromPlaylist(id: string, indexes: number | number[]): Promise<void>;
 	deletePlaylist(id: string): Promise<void>;
+	renamePlaylist(id: string, name: string): Promise<void>;
 	starred(): Promise<{ songs: Song[]; albums: Album[]; artists: Artist[] }>;
 	star(kind: 'song' | 'album' | 'artist', id: string, on: boolean): Promise<void>;
 	search(query: string): Promise<{ songs: Song[]; albums: Album[]; artists: Artist[] }>;

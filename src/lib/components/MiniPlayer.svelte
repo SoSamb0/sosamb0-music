@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { app } from '$lib/app.svelte';
 	import { player } from '$lib/player.svelte';
-	import { setMiniMode } from '$lib/window';
+	import { closeWindow, setMiniMode } from '$lib/window';
 	import { settings } from '$lib/settings.svelte';
 	import Disc from './Disc.svelte';
 	import Icon from './Icon.svelte';
@@ -24,6 +24,7 @@
 				<div class="artist ellipsis">{song?.artist ?? ''}</div>
 			</div>
 			<button class="icon-btn" onclick={restore} aria-label="Развернуть окно" title="Развернуть окно"><Icon name="max" size={14} /></button>
+			<button class="icon-btn" onclick={closeWindow} aria-label="Закрыть" title="Закрыть"><Icon name="x" size={15} /></button>
 		</div>
 		<div class="controls">
 			<button class="icon-btn" onclick={() => player.previous()} disabled={!song} aria-label="Предыдущий"><Icon name="prev" /></button>

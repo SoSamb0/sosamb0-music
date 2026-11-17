@@ -131,8 +131,12 @@ export class Subsonic implements MusicApi {
 		await this.call('updatePlaylist', { playlistId: id, songIdToAdd: songIds });
 	}
 
-	async removeFromPlaylist(id: string, index: number) {
-		await this.call('updatePlaylist', { playlistId: id, songIndexToRemove: index });
+	async removeFromPlaylist(id: string, indexes: number | number[]) {
+		await this.call('updatePlaylist', { playlistId: id, songIndexToRemove: indexes });
+	}
+
+	async renamePlaylist(id: string, name: string) {
+		await this.call('updatePlaylist', { playlistId: id, name });
 	}
 
 	async deletePlaylist(id: string) {

@@ -494,6 +494,21 @@ class Player {
 		app.toast(`Радио по треку «${song.title}»`);
 	}
 
+	/** Star or unstar several tracks. */
+	async starMany(songs: Song[], on: boolean) {
+		const todo = songs.filter((s) => !!s.starred !== on);
+		const value = on ? new Date().toISOString() : undefined;
+		for (const song of todo) {
+			song.starred = value;
+			for (const q of this.queue) if (q.song.id === song.id) q.song.starred = value;
+		}
+		const ok = await app.attempt(async () => {
+			await Promise.all(todo.map((s) => app.api!.star('song', s.id, on)));
+			return true;
+		}, 'Не удалось изменить избранное');
+		if (ok) app.toast(on ? `В избранное: ${songs.length}` : `Убрано из избранного: ${songs.length}`);
+	}
+
 	async toggleStar(song: Song) {
 		const on = !song.starred;
 		const value = on ? new Date().toISOString() : undefined;

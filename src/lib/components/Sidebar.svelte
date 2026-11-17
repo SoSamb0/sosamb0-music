@@ -29,6 +29,19 @@
 		menu.open(e, [
 			{ label: 'Открыть', icon: 'playlist', action: () => app.go({ name: 'playlist', id }) },
 			{
+				label: 'Переименовать…',
+				icon: 'lyrics',
+				action: async () => {
+					const next = (await app.ask('Новое название', name))?.trim();
+					if (!next || next === name) return;
+					const ok = await app.attempt(async () => {
+						await app.api!.renamePlaylist(id, next);
+						return true;
+					});
+					if (ok) app.refreshPlaylists();
+				}
+			},
+			{
 				label: 'Удалить плейлист',
 				icon: 'trash',
 				danger: true,

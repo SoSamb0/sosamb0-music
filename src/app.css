@@ -151,7 +151,9 @@ a {
 	transform: scale(0.92);
 }
 
-.icon-btn.on {
+/* A toggled button keeps its colour while hovered, so a click shows its new state at once. */
+.icon-btn.on,
+.icon-btn.on:hover:not(:disabled) {
 	color: var(--accent);
 }
 

@@ -41,6 +41,8 @@ class App {
 	mini = $state(false);
 	toasts = $state<Toast[]>([]);
 	playlists = $state<Playlist[]>([]);
+	/** Bumped whenever playlist contents may have changed, so open playlist views reload. */
+	playlistRevision = $state(0);
 	/** A pending text question shown as a dialog (window.prompt is unreliable in webviews). */
 	question = $state<{ title: string; value: string; resolve: (answer: string | null) => void } | null>(null);
 	private toastId = 0;
@@ -134,6 +136,7 @@ class App {
 	}
 
 	async refreshPlaylists() {
+		this.playlistRevision++;
 		const list = await this.attempt(() => this.api!.playlists());
 		if (list) this.playlists = list;
 	}

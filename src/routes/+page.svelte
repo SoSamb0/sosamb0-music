@@ -86,7 +86,8 @@
 
 	function onKey(e: KeyboardEvent) {
 		if (!app.api) return;
-		const target = e.target as HTMLElement;
+		// Key events can come from the window itself, which is not an element.
+		const target = e.target instanceof HTMLElement ? e.target : document.body;
 		const typing = target.closest('input, textarea, select, [contenteditable]');
 		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
 			e.preventDefault();

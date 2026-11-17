@@ -158,8 +158,16 @@ export class DemoApi implements MusicApi {
 		return delay(undefined);
 	}
 
-	removeFromPlaylist(id: string, index: number) {
-		playlists.find((p) => p.id === id)?.entry!.splice(index, 1);
+	removeFromPlaylist(id: string, indexes: number | number[]) {
+		const entry = playlists.find((p) => p.id === id)?.entry;
+		// Highest first, so earlier removals do not shift the later positions.
+		for (const i of [indexes].flat().sort((a, b) => b - a)) entry?.splice(i, 1);
+		return delay(undefined);
+	}
+
+	renamePlaylist(id: string, name: string) {
+		const p = playlists.find((x) => x.id === id);
+		if (p) p.name = name;
 		return delay(undefined);
 	}
 

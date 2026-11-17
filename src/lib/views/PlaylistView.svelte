@@ -8,16 +8,21 @@
 
 	let { id }: { id: string } = $props();
 
-	const playlist = loader(() => app.api!.playlist(id));
+	// Reloads when tracks are added to or removed from any playlist.
+	const playlist = loader(() => {
+		app.playlistRevision;
+		return app.api!.playlist(id);
+	});
 	const songs = $derived(playlist.value?.entry ?? []);
 
-	async function remove(index: number) {
+	async function remove(indexes: number | number[]) {
+		const count = [indexes].flat().length;
 		const ok = await app.attempt(async () => {
-			await app.api!.removeFromPlaylist(id, index);
+			await app.api!.removeFromPlaylist(id, indexes);
 			return true;
 		});
 		if (ok) {
-			playlist.reload();
+			app.toast(count === 1 ? 'Трек убран из плейлиста' : `Убрано из плейлиста: ${count}`);
 			app.refreshPlaylists();
 		}
 	}
@@ -40,6 +45,7 @@
 			<SongList
 				{songs}
 				extraMenu={(_, i) => [{ label: '', separator: true }, { label: 'Убрать из плейлиста', icon: 'trash', danger: true, action: () => remove(i) }]}
+				onremove={(indexes) => remove(indexes)}
 			/>
 		{:else}
 			<div class="empty"><p>В плейлисте пока пусто. Добавляйте треки через меню «⋯».</p></div>

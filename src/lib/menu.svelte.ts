@@ -33,7 +33,8 @@ class Menu {
 
 export const menu = new Menu();
 
-function playlistItems(songs: () => Promise<Song[]> | Song[]): MenuItem[] {
+/** "Add to playlist" entries. `after` runs once the tracks were added. */
+export function playlistItems(songs: () => Promise<Song[]> | Song[], after?: () => void): MenuItem[] {
 	const add = async (id: string, name: string) => {
 		const list = await songs();
 		const ok = await app.attempt(async () => {
@@ -41,8 +42,9 @@ function playlistItems(songs: () => Promise<Song[]> | Song[]): MenuItem[] {
 			return true;
 		});
 		if (ok) {
-			app.toast(`Добавлено в «${name}»`);
+			app.toast(list.length === 1 ? `Добавлено в «${name}»` : `Добавлено в «${name}»: ${list.length}`);
 			app.refreshPlaylists();
+			after?.();
 		}
 	};
 	return [
@@ -60,6 +62,7 @@ function playlistItems(songs: () => Promise<Song[]> | Song[]): MenuItem[] {
 				if (ok) {
 					app.toast(`Плейлист «${name.trim()}» создан`);
 					app.refreshPlaylists();
+					after?.();
 				}
 			}
 		},
@@ -78,6 +81,25 @@ export function songMenu(song: Song, extra: MenuItem[] = []): MenuItem[] {
 		{ label: '', separator: true },
 		...(song.albumId ? [{ label: 'Перейти к альбому', icon: 'album', action: () => app.go({ name: 'album', id: song.albumId! }) }] : []),
 		...(song.artistId ? [{ label: 'Перейти к исполнителю', icon: 'artist', action: () => app.go({ name: 'artist', id: song.artistId! }) }] : []),
+		...extra
+	];
+}
+
+/** Actions for several selected tracks at once. */
+export function songsMenu(songs: Song[], extra: MenuItem[] = [], after?: () => void): MenuItem[] {
+	const n = songs.length;
+	const then = (fn: () => unknown) => () => {
+		fn();
+		after?.();
+	};
+	return [
+		{ label: `Играть выбранные (${n})`, icon: 'play', action: then(() => player.play(songs)) },
+		{ label: 'Играть следующими', icon: 'next', action: then(() => player.playNext(songs)) },
+		{ label: 'Добавить в очередь', icon: 'queue', action: then(() => player.enqueue(songs)) },
+		{ label: '', separator: true },
+		{ label: 'В избранное', icon: 'heart', action: then(() => player.starMany(songs, true)) },
+		{ label: 'Убрать из избранного', icon: 'heart', action: then(() => player.starMany(songs, false)) },
+		{ label: 'Добавить в плейлист', icon: 'playlist', children: playlistItems(() => songs, after) },
 		...extra
 	];
 }
