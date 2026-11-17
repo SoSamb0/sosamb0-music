@@ -245,6 +245,21 @@
 					<button class="chip" class:on={look.npBackground === value} onclick={() => setLook('npBackground', value as Look['npBackground'])}>{label}</button>
 				{/each}
 			</div>
+			{#if look.npBackground !== 'solid'}
+				<label class="row sub slider">
+					<span class="strong">Яркость фона</span>
+					<input
+						type="range"
+						min="0.2"
+						max="1"
+						step="0.02"
+						value={look.npStrength}
+						style:--fill="{((look.npStrength - 0.2) / 0.8) * 100}%"
+						oninput={(e) => setLook('npStrength', +e.currentTarget.value)}
+					/>
+					<span class="tnum muted">{Math.round(look.npStrength * 100)}%</span>
+				</label>
+			{/if}
 
 			<div class="row">
 				<div class="grow"><div class="strong">Обложка</div></div>

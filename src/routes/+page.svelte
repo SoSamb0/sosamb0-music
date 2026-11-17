@@ -41,15 +41,11 @@
 
 	let titlebar = $state<ReturnType<typeof Titlebar>>();
 	let mobileScrolled = $state(false);
-	let mobileTitle = $state('');
 
-	// The phone header turns frosted once the page moves under it, and takes the page's title.
+	// The phone's floating buttons get a backing once the page moves under them.
 	function onMobileScroll() {
 		const scrolled = (scroller?.scrollTop ?? 0) > 24;
-		if (scrolled !== mobileScrolled) {
-			mobileScrolled = scrolled;
-			if (scrolled) mobileTitle = scroller?.querySelector('h1')?.textContent?.trim() ?? '';
-		}
+		if (scrolled !== mobileScrolled) mobileScrolled = scrolled;
 	}
 	let scroller = $state<HTMLElement>();
 
@@ -183,7 +179,7 @@
 		{/if}
 		<div class="shade"></div>
 		<main bind:this={scroller} onscroll={onMobileScroll}>
-			<MobileHeader scrolled={mobileScrolled} title={mobileTitle} />
+			<MobileHeader scrolled={mobileScrolled} />
 			{@render views()}
 		</main>
 		<MobileNav />

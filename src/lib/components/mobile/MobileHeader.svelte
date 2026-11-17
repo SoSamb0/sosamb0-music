@@ -2,8 +2,8 @@
 	import { app } from '$lib/app.svelte';
 	import Icon from '../Icon.svelte';
 
-	/** True once the page under the header is scrolled: the header turns frosted and shows a title. */
-	let { scrolled = false, title = '' }: { scrolled?: boolean; title?: string } = $props();
+	/** True once the page is scrolled: the buttons get a small round backing to stay readable. */
+	let { scrolled = false }: { scrolled?: boolean } = $props();
 
 	const ROOTS = ['home', 'search', 'library', 'playlists'];
 	const route = $derived(app.route);
@@ -17,10 +17,10 @@
 	});
 </script>
 
-<header class="mh" class:scrolled={scrolled || searching} class:overlay={root && !searching}>
+<header class="mh" class:scrolled class:overlay={root && !searching}>
 	<div class="bar">
 		{#if !root}
-			<button class="icon-btn" onclick={() => app.back()} aria-label="Назад"><Icon name="left" size={24} /></button>
+			<button class="icon-btn float" onclick={() => app.back()} aria-label="Назад"><Icon name="left" size={24} /></button>
 		{/if}
 		{#if searching && route.name === 'search'}
 			<label class="search">
@@ -38,25 +38,21 @@
 				{/if}
 			</label>
 		{:else}
-			<span class="title ellipsis">{scrolled ? title : ''}</span>
-			<button class="icon-btn" onclick={() => (app.soundOpen = true)} aria-label="Звук"><Icon name="sliders" size={20} /></button>
+			<span class="grow"></span>
+			<button class="icon-btn float" onclick={() => (app.soundOpen = true)} aria-label="Звук"><Icon name="sliders" size={20} /></button>
 		{/if}
 	</div>
 </header>
 
 <style>
+	/* No bar of its own: just the buttons, floating at the top while the page scrolls under them. */
 	.mh {
 		position: sticky;
 		top: 0;
 		z-index: 10;
 		padding-top: var(--sat, env(safe-area-inset-top, 0px));
-		border-bottom: 1px solid transparent;
-		transition:
-			background 0.2s,
-			border-color 0.2s;
 	}
 
-	/* Root tabs: the buttons share the line with the page's big title. */
 	.mh.overlay {
 		margin-bottom: -50px;
 		pointer-events: none;
@@ -66,38 +62,31 @@
 		pointer-events: auto;
 	}
 
-	.mh.scrolled {
-		margin-bottom: 0;
-		background: rgb(14 14 18 / 0.82);
-		backdrop-filter: blur(22px) saturate(1.5);
-		border-bottom-color: var(--line);
-	}
-
-	.mh.overlay.scrolled {
-		margin-bottom: -50px;
-	}
-
 	.bar {
 		display: flex;
 		align-items: center;
 		gap: 6px;
 		height: 50px;
-		padding: 0 6px 0 8px;
+		padding: 0 8px;
 	}
 
-	.title {
+	.grow {
 		flex: 1;
-		min-width: 0;
-		padding-left: 8px;
-		font-size: 16px;
-		font-weight: 650;
-		animation: fade 0.2s;
 	}
 
-	@keyframes fade {
-		from {
-			opacity: 0;
-		}
+	.float {
+		width: 40px;
+		height: 40px;
+		color: var(--text);
+		transition:
+			background 0.2s,
+			box-shadow 0.2s;
+	}
+
+	.scrolled .float {
+		background: rgb(16 16 21 / 0.72);
+		backdrop-filter: blur(12px);
+		box-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
 	}
 
 	.search {
@@ -109,7 +98,9 @@
 		margin: 0 4px;
 		padding: 0 6px 0 14px;
 		border-radius: 999px;
-		background: var(--surface-strong);
+		background: var(--card);
+		border: 1px solid var(--line);
+		box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
 		color: var(--muted);
 	}
 

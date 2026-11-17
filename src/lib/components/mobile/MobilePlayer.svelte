@@ -74,6 +74,7 @@
 
 <div
 	class="mp bg-{bg}"
+	style:--np-strength={settings.data.look.npStrength}
 	style:translate="0 {pull}px"
 	class:pulling={pull > 0}
 	onpointerdown={down}
@@ -187,7 +188,7 @@
 
 	/* Backgrounds, as chosen in the settings (same choices as the desktop player). */
 	.bg-dim {
-		background: rgb(10 10 13 / 0.6);
+		background: rgb(10 10 13 / calc(1 - var(--np-strength, 0.7) * 0.6));
 		backdrop-filter: blur(40px) saturate(1.5);
 	}
 
@@ -198,11 +199,17 @@
 		overflow: hidden;
 	}
 
+	/* Darkening over the cover; "Яркость фона" lightens it. */
 	.art-bg::after {
 		content: '';
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(180deg, rgb(10 10 13 / 0.25), rgb(10 10 13 / 0.55) 55%, rgb(10 10 13 / 0.88));
+		background: linear-gradient(180deg, rgb(10 10 13 / 0.15), rgb(10 10 13 / 0.45) 55%, rgb(10 10 13 / 0.85));
+		opacity: calc(1.35 - var(--np-strength, 0.7));
+	}
+
+	.art-bg .layer.a {
+		opacity: calc(0.35 + var(--np-strength, 0.7) * 0.65);
 	}
 
 	.layer {

@@ -47,7 +47,7 @@
 	}
 </script>
 
-<div class="np bg-{look.npBackground}" class:solo={!showRight} class:vinyl={look.coverShape !== 'square'}>
+<div class="np bg-{look.npBackground}" style:--np-strength={look.npStrength} class:solo={!showRight} class:vinyl={look.coverShape !== 'square'}>
 	{#if art && (look.npBackground === 'blur' || look.npBackground === 'motion')}
 		<div class="art-bg" aria-hidden="true">
 			{#key art}
@@ -108,7 +108,7 @@
 
 	/* "Как раньше": the app behind, frosted. */
 	.bg-dim {
-		background: rgb(10 10 13 / 0.55);
+		background: rgb(10 10 13 / calc(1 - var(--np-strength, 0.7) * 0.65));
 		backdrop-filter: blur(50px) saturate(1.6);
 	}
 
@@ -133,6 +133,7 @@
 		content: '';
 		position: absolute;
 		inset: 0;
+		opacity: calc(1.35 - var(--np-strength, 0.7));
 		background:
 			radial-gradient(120% 90% at 25% 50%, rgb(0 0 0 / 0.12), rgb(0 0 0 / 0.5)),
 			linear-gradient(90deg, rgb(10 10 13 / 0.15), rgb(10 10 13 / 0.45));
