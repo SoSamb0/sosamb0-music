@@ -8,6 +8,11 @@
 	--surface-hover: rgb(255 255 255 / 0.08);
 	--surface-strong: rgb(255 255 255 / 0.12);
 	--line: rgb(255 255 255 / 0.08);
+	/* Solid surfaces (cards, tiles, sheets), lightly tinted by the accent so they belong together. */
+	--card: color-mix(in srgb, rgb(var(--accent-rgb)) 6%, #17181e);
+	--card-hover: color-mix(in srgb, rgb(var(--accent-rgb)) 10%, #1e1f26);
+	--sheet: color-mix(in srgb, rgb(var(--accent-rgb)) 5%, #141519);
+	--on-accent: #0b0b10;
 	--text: #f3f3f6;
 	--muted: rgb(255 255 255 / 0.62);
 	--faint: rgb(255 255 255 / 0.38);
@@ -438,6 +443,18 @@ html[data-mobile] {
 	user-select: none;
 }
 
+/* Phones scroll by finger; scrollbars only take room (and cut the frosted header short). */
+html[data-mobile] * {
+	scrollbar-width: none;
+}
+
+/* Android's WebView ignores scrollbar-width; this is what it understands. */
+html[data-mobile] ::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
+}
+
 html[data-mobile] input,
 html[data-mobile] textarea {
 	-webkit-user-select: text;
@@ -475,14 +492,36 @@ html[data-mobile] .drawer {
 	padding-bottom: var(--sab, env(safe-area-inset-bottom, 0px));
 }
 
-/* Things that appear on mouse hover are always shown on a touch screen. */
+/* Things that appear on mouse hover are always shown on a touch screen. (Album cards open on a
+   tap instead of carrying a play button on every cover.) */
 @media (hover: none) {
 	.row .more,
-	.card .play,
 	.row .remove {
 		opacity: 1 !important;
 		transform: none !important;
 	}
+}
+
+/* Phone: one family of solid controls instead of see-through ones. */
+html[data-mobile] .btn:not(.primary) {
+	background: var(--card);
+	border: 1px solid var(--line);
+}
+
+html[data-mobile] .btn {
+	height: 40px;
+}
+
+html[data-mobile] .chip {
+	height: 34px;
+	padding: 0 14px;
+	background: var(--card);
+	border: 1px solid var(--line);
+}
+
+html[data-mobile] .chip.on {
+	background: var(--accent-soft);
+	border-color: rgb(var(--accent-rgb) / 0.45);
 }
 
 /* A row being dragged by finger (src/lib/touchdrag.ts). */

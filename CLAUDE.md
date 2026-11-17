@@ -88,6 +88,9 @@ HTTP/кэш → symphonia → f64 → [ReplayGain] → [ресемплер] → 
 - Android: крейт `ndk` 0.9 считает ошибкой успешный `AAudioStream_write` — используем `ndk-sys` напрямую.
 - Отладка на телефоне: `adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>` → DevTools-протокол
   WebView (debug-APK). `eprintln!` из Rust виден в `adb logcat` с тегом `RustStdoutStderr`.
+- Android WebView не поддерживает `scrollbar-width` — полосы прокрутки прячет `::-webkit-scrollbar`.
+- Телефонная раскладка экранов — через `@container main (max-width: 560px)`, общие плотные поверхности —
+  `--card`, `--card-hover`, `--sheet` в `app.css`. Раскладка главной — `settings.data.home` (`HomeEditor.svelte`).
 - Длинные heredoc в Bash-инструменте могут обрезаться — длинные скрипты писать файлом через Write.
 - Проверка в браузерной панели: синтетические `.click()` срабатывают, но иногда реальная мышь ведёт себя
   иначе (так нашли баг подменю) — важное проверять настоящими кликами.

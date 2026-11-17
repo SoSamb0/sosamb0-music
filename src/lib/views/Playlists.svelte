@@ -2,6 +2,13 @@
 	import { app, plural } from '$lib/app.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { SMART, type SmartKind } from '$lib/library.svelte';
+	import { menu } from '$lib/menu.svelte';
+	import { settings } from '$lib/settings.svelte';
+
+	function pinMenu(e: MouseEvent, id: string, title: string) {
+		const pinned = settings.isPinned(id);
+		menu.open(e, [{ label: pinned ? 'Открепить с главной' : 'Закрепить на главной', icon: pinned ? 'x' : 'home', action: () => settings.togglePin(id) }], { title });
+	}
 
 	async function create() {
 		const name = (await app.ask('Название плейлиста'))?.trim();
@@ -23,7 +30,7 @@
 	<h2 class="sub">Умные</h2>
 	<div class="list">
 		{#each Object.entries(SMART) as [id, s] (id)}
-			<button class="row" onclick={() => app.go({ name: 'smart', id: id as SmartKind })}>
+			<button class="row" onclick={() => app.go({ name: 'smart', id: id as SmartKind })} oncontextmenu={(e) => pinMenu(e, `smart:${id}`, s.title)}>
 				<span class="ico"><Icon name={s.icon} size={20} /></span>
 				<span class="grow">
 					<span class="ellipsis">{s.title}</span>
@@ -36,7 +43,7 @@
 	<h2 class="sub">Мои</h2>
 	<div class="list">
 		{#each app.playlists as p (p.id)}
-			<button class="row" onclick={() => app.go({ name: 'playlist', id: p.id })}>
+			<button class="row" onclick={() => app.go({ name: 'playlist', id: p.id })} oncontextmenu={(e) => pinMenu(e, p.id, p.name)}>
 				<span class="ico"><Icon name="playlist" size={20} /></span>
 				<span class="grow">
 					<span class="ellipsis">{p.name}</span>
@@ -109,7 +116,7 @@
 		width: 42px;
 		height: 42px;
 		border-radius: 10px;
-		background: var(--surface);
+		background: var(--card);
 		color: var(--accent);
 	}
 </style>

@@ -40,6 +40,17 @@
 	import Stats from '$lib/views/Stats.svelte';
 
 	let titlebar = $state<ReturnType<typeof Titlebar>>();
+	let mobileScrolled = $state(false);
+	let mobileTitle = $state('');
+
+	// The phone header turns frosted once the page moves under it, and takes the page's title.
+	function onMobileScroll() {
+		const scrolled = (scroller?.scrollTop ?? 0) > 24;
+		if (scrolled !== mobileScrolled) {
+			mobileScrolled = scrolled;
+			if (scrolled) mobileTitle = scroller?.querySelector('h1')?.textContent?.trim() ?? '';
+		}
+	}
 	let scroller = $state<HTMLElement>();
 
 	const route = $derived(app.route);
@@ -93,6 +104,7 @@
 	$effect(() => {
 		route;
 		scroller?.scrollTo({ top: 0 });
+		mobileScrolled = false;
 	});
 
 	function onKey(e: KeyboardEvent) {
@@ -170,8 +182,10 @@
 			{#key backdrop}<img class="backdrop" src={backdrop} alt="" style:--strength={look.backdropStrength} />{/key}
 		{/if}
 		<div class="shade"></div>
-		<MobileHeader />
-		<main bind:this={scroller}>{@render views()}</main>
+		<main bind:this={scroller} onscroll={onMobileScroll}>
+			<MobileHeader scrolled={mobileScrolled} title={mobileTitle} />
+			{@render views()}
+		</main>
 		<MobileNav />
 	</div>
 	{#if app.nowPlaying}<MobilePlayer />{/if}
@@ -309,6 +323,14 @@
 		flex: 1;
 		min-height: 0;
 		overscroll-behavior: contain;
+	}
+
+	/* The blur fades out towards the image's edges; on a phone the page reaches the screen's top
+	   edge (under the status bar), so the image is made larger to keep the glow there too. */
+	.app.mobile .backdrop {
+		inset: -40%;
+		width: 180%;
+		height: 180%;
 	}
 
 	@media (max-width: 1040px) {

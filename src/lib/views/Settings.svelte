@@ -116,8 +116,8 @@
 		<h2>Звук</h2>
 		<div class="card row">
 			<div class="grow">
-				<div class="strong">Эквалайзер, эффекты, устройство вывода</div>
-				<div class="hint">Эксклюзивный режим WASAPI, ReplayGain, кроссфейд и схема звукового тракта.</div>
+				<div class="strong">{isMobile ? 'Эквалайзер и эффекты' : 'Эквалайзер, эффекты, устройство вывода'}</div>
+				<div class="hint">{isMobile ? 'ReplayGain, кроссфейд и схема звукового тракта.' : 'Эксклюзивный режим WASAPI, ReplayGain, кроссфейд и схема звукового тракта.'}</div>
 			</div>
 			<button class="btn" onclick={() => (app.soundOpen = true)}><Icon name="sliders" size={16} />Открыть</button>
 		</div>
@@ -471,7 +471,8 @@
 		display: flex;
 		flex-direction: column;
 		border-radius: var(--radius);
-		background: var(--surface);
+		background: var(--card);
+		border: 1px solid var(--line);
 	}
 
 	.row {

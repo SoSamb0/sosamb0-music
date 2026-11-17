@@ -107,7 +107,32 @@ interface Persisted {
 		ahead: number;
 	};
 	look: Look;
+	home: HomeLayout;
 }
+
+/** Sections of the home screen, in the order the user chose; hidden ones stay in the list. */
+export type HomeSection = 'pinned' | 'mixes' | 'genres' | 'newest' | 'recent' | 'frequent' | 'random' | 'playlists' | 'smart';
+
+export interface HomeLayout {
+	order: HomeSection[];
+	hidden: HomeSection[];
+	/** Quick-access tiles: playlist ids, or "smart:<kind>" for smart playlists. */
+	pinned: string[];
+}
+
+export const HOME_SECTIONS: Record<HomeSection, string> = {
+	pinned: 'Закреплённое',
+	mixes: 'Миксы',
+	genres: 'Миксы по жанрам',
+	newest: 'Недавно добавленные',
+	recent: 'Вы недавно слушали',
+	frequent: 'Слушаете чаще всего',
+	random: 'Случайная подборка',
+	playlists: 'Ваши плейлисты',
+	smart: 'Умные плейлисты'
+};
+
+const HOME_ORDER: HomeSection[] = ['pinned', 'mixes', 'genres', 'newest', 'recent', 'playlists', 'frequent', 'smart', 'random'];
 
 const KEY = 'lumen.settings.v1';
 
@@ -151,7 +176,8 @@ function defaults(): Persisted {
 			animations: true,
 			vizStyle: 'off',
 			vizPlace: 'below'
-		}
+		},
+		home: { order: [...HOME_ORDER], hidden: [], pinned: [] }
 	};
 }
 
@@ -167,11 +193,19 @@ function load(): Persisted {
 			dsp: { ...base.dsp, ...saved.dsp },
 			cache: { ...base.cache, ...saved.cache },
 			discord: { ...base.discord, ...saved.discord },
-			look: { ...base.look, ...saved.look }
+			look: { ...base.look, ...saved.look },
+			home: homeLayout(saved.home)
 		};
 	} catch {
 		return base;
 	}
+}
+
+/** A saved home layout, with sections added in newer versions appended. */
+function homeLayout(saved: Partial<HomeLayout> | undefined): HomeLayout {
+	const order = (saved?.order ?? []).filter((s) => s in HOME_SECTIONS);
+	for (const s of HOME_ORDER) if (!order.includes(s)) order.push(s);
+	return { order, hidden: saved?.hidden ?? [], pinned: saved?.pinned ?? [] };
 }
 
 class Settings {
@@ -188,6 +222,17 @@ class Settings {
 				// Storage unavailable: settings last for this session only.
 			}
 		}, 150);
+	}
+
+	isPinned(id: string): boolean {
+		return this.data.home.pinned.includes(id);
+	}
+
+	/** Put a playlist on the home screen's quick-access tiles, or take it off. */
+	togglePin(id: string) {
+		const pinned = this.data.home.pinned;
+		this.data.home.pinned = pinned.includes(id) ? pinned.filter((p) => p !== id) : [...pinned, id];
+		this.save();
 	}
 
 	/** Volume slider position (0..1) to linear gain. Cubic feels even to the ear; 1 stays exactly 1. */

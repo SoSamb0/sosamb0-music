@@ -12,6 +12,7 @@
 	const song = $derived(player.current);
 	const signal = $derived(player.signal);
 	const art = $derived(app.api?.coverUrl(song?.coverArt, 600) ?? '');
+	const bg = $derived(settings.data.look.npBackground);
 	const sleeping = $derived(player.sleepUntil !== null || player.sleepAfterTrack);
 
 	/** What fills the middle: the cover, the lyrics or the queue (app.panel). */
@@ -72,7 +73,7 @@
 </script>
 
 <div
-	class="mp"
+	class="mp bg-{bg}"
 	style:translate="0 {pull}px"
 	class:pulling={pull > 0}
 	onpointerdown={down}
@@ -83,8 +84,13 @@
 	aria-label="Сейчас играет"
 	tabindex="-1"
 >
-	{#if art && settings.data.look.npBackground !== 'solid'}
-		<div class="bg" aria-hidden="true">{#key art}<img src={art} alt="" />{/key}</div>
+	{#if art && (bg === 'blur' || bg === 'motion')}
+		<div class="art-bg" aria-hidden="true">
+			{#key art}
+				<img class="layer a" src={art} alt="" />
+				{#if bg === 'motion'}<img class="layer b" src={art} alt="" />{/if}
+			{/key}
+		</div>
 	{/if}
 
 	<header>
@@ -179,25 +185,80 @@
 		}
 	}
 
-	.bg {
+	/* Backgrounds, as chosen in the settings (same choices as the desktop player). */
+	.bg-dim {
+		background: rgb(10 10 13 / 0.6);
+		backdrop-filter: blur(40px) saturate(1.5);
+	}
+
+	.art-bg {
 		position: absolute;
-		inset: -20%;
+		inset: 0;
 		z-index: -1;
+		overflow: hidden;
 	}
 
-	.bg img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		filter: blur(70px) saturate(1.5);
-		opacity: 0.5;
-	}
-
-	.bg::after {
+	.art-bg::after {
 		content: '';
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(180deg, rgb(10 10 13 / 0.35), rgb(10 10 13 / 0.85));
+		background: linear-gradient(180deg, rgb(10 10 13 / 0.25), rgb(10 10 13 / 0.55) 55%, rgb(10 10 13 / 0.88));
+	}
+
+	.layer {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		width: 170%;
+		height: 170%;
+		object-fit: cover;
+		translate: -50% -50%;
+		filter: blur(60px) saturate(1.6) brightness(0.85);
+		animation: fade-in 0.8s ease;
+	}
+
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	/* "Живой фон": two copies drifting slowly; only transforms move, so the GPU does the work. */
+	.bg-motion .layer {
+		will-change: transform;
+	}
+
+	.bg-motion .a {
+		animation:
+			fade-in 0.8s ease,
+			drift-a 38s ease-in-out infinite alternate;
+	}
+
+	.bg-motion .b {
+		opacity: 0.55;
+		mix-blend-mode: screen;
+		animation:
+			fade-in 0.8s ease,
+			drift-b 52s ease-in-out infinite alternate;
+	}
+
+	@keyframes drift-a {
+		to {
+			transform: rotate(40deg) scale(1.25);
+		}
+	}
+
+	@keyframes drift-b {
+		from {
+			transform: rotate(180deg) scale(1.3);
+		}
+		to {
+			transform: rotate(120deg) scale(1);
+		}
+	}
+
+	:global(html[data-motion='off']) .bg-motion .layer {
+		animation: none;
 	}
 
 	header {
