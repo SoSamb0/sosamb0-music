@@ -29,6 +29,7 @@
 		right: '<path d="m9 18 6-6-6-6"/>',
 		down: '<path d="m6 9 6 6 6-6"/>',
 		up: '<path d="m18 15-6-6-6 6"/>',
+		grip: '<path d="M5 8h14"/><path d="M5 12h14"/><path d="M5 16h14"/>',
 		more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
 		plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
 		x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',

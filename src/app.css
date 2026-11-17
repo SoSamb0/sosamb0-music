@@ -476,3 +476,22 @@ html[data-mobile] .drawer {
 		transform: none !important;
 	}
 }
+
+/* A row being dragged by finger (src/lib/touchdrag.ts). */
+.lifted {
+	position: relative;
+	z-index: 20;
+	background: rgb(38 40 50 / 0.97) !important;
+	box-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+	border-radius: var(--radius-sm);
+}
+
+/* The grip a finger drags a row by. */
+.grip {
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 44px;
+	color: var(--faint);
+	touch-action: none;
+}

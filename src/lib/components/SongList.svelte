@@ -2,6 +2,8 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { app, formatTime } from '$lib/app.svelte';
 	import { drag, endDrag, reorder, startDrag, trackLabel } from '$lib/dnd.svelte';
+	import { isMobile } from '$lib/platform';
+	import { touchReorder } from '$lib/touchdrag';
 	import { menu, playlistItems, songHeader, songMenu, songsMenu, type MenuItem } from '$lib/menu.svelte';
 	import { isLossless, player } from '$lib/player.svelte';
 	import type { Song } from '$lib/types';
@@ -64,6 +66,20 @@
 		endDrag();
 		selected.clear();
 		if (order.some((v, k) => v !== k)) onreorder?.(order);
+	}
+
+	/** A finger drag by the row's grip (phones): move that one row. */
+	function touchStart(e: PointerEvent, i: number) {
+		touchReorder(
+			e,
+			i,
+			(gap) => (dropAt = gap),
+			(from, gap) => {
+				const order = reorder(songs.length, [from], gap);
+				selected.clear();
+				if (order.some((v, k) => v !== k)) onreorder?.(order);
+			}
+		);
 	}
 
 	function dragEnd() {
@@ -187,7 +203,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="list" class:with-album={showAlbum} class:selecting={showBar} role="list">
+<div class="list" class:with-album={showAlbum} class:selecting={showBar} class:reorderable={isMobile && !!onreorder} role="list">
 	{#each songs as song, i (song.id + ':' + i)}
 		{@const active = song.id === currentId}
 		<!-- Clicking the row selects it with the mouse; from the keyboard the checkbox button does it. -->
@@ -199,7 +215,8 @@
 			class:drop-before={dropAt === i}
 			class:drop-after={dropAt === songs.length && i === songs.length - 1}
 			role="listitem"
-			draggable={onreorder ? 'true' : undefined}
+			data-i={i}
+			draggable={onreorder && !isMobile ? 'true' : undefined}
 			ondragstart={(e) => dragStart(e, i)}
 			ondragover={(e) => dragOver(e, i)}
 			ondrop={dropOnList}
@@ -253,6 +270,11 @@
 			<button class="icon-btn more" onclick={(e) => openMenu(e, song, i)} aria-label="Ещё">
 				<Icon name="more" size={17} />
 			</button>
+			{#if isMobile && onreorder}
+				<button class="grip" onpointerdown={(e) => touchStart(e, i)} onclick={(e) => e.stopPropagation()} aria-label="Перетащить {song.title}">
+					<Icon name="grip" size={20} />
+				</button>
+			{/if}
 		</div>
 	{/each}
 
@@ -556,6 +578,14 @@
 
 		.selecting .row {
 			grid-template-columns: 28px 28px minmax(0, 1fr) 40px 34px;
+		}
+
+		.reorderable .row {
+			grid-template-columns: 28px minmax(0, 1fr) 40px 34px 40px;
+		}
+
+		.reorderable.selecting .row {
+			grid-template-columns: 28px 28px minmax(0, 1fr) 40px 34px 40px;
 		}
 	}
 </style>

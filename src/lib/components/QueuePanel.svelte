@@ -5,10 +5,14 @@
 	import { settings } from '$lib/settings.svelte';
 	import Cover from './Cover.svelte';
 	import Icon from './Icon.svelte';
+	import { isMobile } from '$lib/platform';
+	import { gapToIndex, touchReorder } from '$lib/touchdrag';
 
 	let dragFrom = $state<number | null>(null);
 	let dragOver = $state<number | null>(null);
 	let list = $state<HTMLElement>();
+	/** Where a row dragged by finger would land (insert before this index). */
+	let touchGap = $state<number | null>(null);
 
 	const upcoming = $derived(player.queue.length - player.index - 1);
 	const cachedCount = $derived(player.queue.filter((q) => player.cached.has(player.cacheKey(q.song))).length);
@@ -56,10 +60,12 @@
 					class="row"
 					class:current={i === player.index}
 					class:played={i < player.index}
-					class:over={dragOver === i && dragFrom !== i}
+					class:over={(dragOver === i && dragFrom !== i) || touchGap === i}
+					class:over-end={touchGap === player.queue.length && i === player.queue.length - 1}
+					class:touch={isMobile}
 					data-i={i}
 					role="listitem"
-					draggable="true"
+					draggable={isMobile ? undefined : "true"}
 					ondragstart={(e) => {
 						dragFrom = i;
 						e.dataTransfer!.effectAllowed = 'move';
@@ -90,8 +96,20 @@
 						{/if}
 					</span>
 					<span class="dur tnum">{formatTime(item.song.duration)}</span>
-					{#if i !== player.index}
+					<!-- On a phone the space goes to the title; removing is in the long-press menu. -->
+					{#if isMobile}
+						<span></span>
+					{:else if i !== player.index}
 						<button class="icon-btn remove" onclick={() => player.remove(i)} aria-label="Убрать из очереди"><Icon name="x" size={15} /></button>
+					{/if}
+					{#if isMobile}
+						<button
+							class="grip"
+							onpointerdown={(e) => touchReorder(e, i, (g) => (touchGap = g), (from, gap) => player.move(from, gapToIndex(from, gap)))}
+							aria-label="Перетащить {item.song.title}"
+						>
+							<Icon name="grip" size={20} />
+						</button>
 					{/if}
 				</div>
 			{/each}
@@ -171,6 +189,20 @@
 
 	.row.played {
 		opacity: 0.5;
+	}
+
+	.row.touch {
+		grid-template-columns: 40px minmax(0, 1fr) 16px auto 0 40px;
+		height: 58px;
+	}
+
+	.row.over-end::after {
+		content: '';
+		position: absolute;
+		inset: auto 6px -1px;
+		height: 2px;
+		border-radius: 2px;
+		background: var(--accent);
 	}
 
 	.row.over::before {
