@@ -32,14 +32,15 @@
 	let startY: number | null = null;
 	let pull = $state(0);
 	function down(e: PointerEvent) {
-		if (view !== 'cover') return;
+		// Lists scroll and the seek bar seeks; everything else can be pulled down.
+		if ((e.target as HTMLElement).closest('.scroll, .seek, input')) return;
 		startY = e.clientY;
 	}
 	function move(e: PointerEvent) {
 		if (startY !== null) pull = Math.max(0, e.clientY - startY);
 	}
 	function up() {
-		if (pull > 110) close();
+		if (pull > 90) close();
 		startY = null;
 		pull = 0;
 	}
@@ -100,7 +101,7 @@
 		{:else if view === 'queue'}
 			<div class="scroll"><QueuePanel /></div>
 		{:else if song}
-			<div class="art"><Disc id={song.coverArt} size={800} eager /></div>
+			<div class="art" class:round={settings.data.look.coverShape !== 'square'}><Disc id={song.coverArt} size={800} eager /></div>
 		{/if}
 	</div>
 
@@ -153,12 +154,13 @@
 
 <style>
 	.mp {
+		touch-action: none;
 		position: fixed;
 		inset: 0;
 		z-index: 40;
 		display: flex;
 		flex-direction: column;
-		padding: calc(env(safe-area-inset-top) + 8px) 22px calc(env(safe-area-inset-bottom) + 18px);
+		padding: calc(var(--sat, env(safe-area-inset-top, 0px)) + 8px) 22px calc(var(--sab, env(safe-area-inset-bottom, 0px)) + 18px);
 		background: #0a0a0d;
 		overflow: hidden;
 		isolation: isolate;
@@ -228,7 +230,12 @@
 		box-shadow: 0 24px 60px rgb(0 0 0 / 0.55);
 	}
 
+	.art.round {
+		border-radius: 50%;
+	}
+
 	.scroll {
+		touch-action: pan-y;
 		align-self: stretch;
 		width: 100%;
 		overflow-y: auto;

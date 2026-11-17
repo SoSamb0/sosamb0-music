@@ -36,20 +36,26 @@
 
 	<div class="mixes">
 		<button class="mix primary" onclick={() => mix('random', () => app.api!.randomSongs(100), 'В библиотеке пока нет треков')} disabled={busy !== null}>
-			<span class="ico"><Icon name="shuffle" size={20} /></span>
+			<span class="ico">{#if busy === 'random'}<span class="spinner"></span>{:else}<Icon name="shuffle" size={20} />{/if}</span>
 			<span><b>Случайный микс</b><small>100 треков из всей библиотеки</small></span>
 		</button>
 		<button class="mix" onclick={() => mix('fav', () => app.api!.starred().then((s) => s.songs), 'В избранном пока пусто')} disabled={busy !== null}>
-			<span class="ico"><Icon name="heart" size={20} /></span>
-			<span><b>Избранное вперемешку</b><small>Всё, что вы отметили</small></span>
+			<span class="ico">{#if busy === 'fav'}<span class="spinner"></span>{:else}<Icon name="heart" size={20} />{/if}</span>
+			<span><b>Избранное</b><small>Всё отмеченное вперемешку</small></span>
 		</button>
-		{#each genres.value ?? [] as genre (genre.value)}
-			<button class="mix" onclick={() => mix(genre.value, () => app.api!.randomSongs(80, genre.value), 'В этом жанре нет треков')} disabled={busy !== null}>
-				<span class="ico"><Icon name="radio" size={20} /></span>
-				<span class="ellipsis"><b class="ellipsis">{genre.value}</b><small>Микс по жанру</small></span>
-			</button>
-		{/each}
 	</div>
+
+	{#if genres.value?.length}
+		<div class="section-head"><h2>Миксы по жанрам</h2></div>
+		<div class="genres">
+			{#each genres.value as genre (genre.value)}
+				<button class="genre" onclick={() => mix(genre.value, () => app.api!.randomSongs(80, genre.value), 'В этом жанре нет треков')} disabled={busy !== null}>
+					{#if busy === genre.value}<span class="spinner"></span>{:else}<Icon name="radio" size={15} />{/if}
+					<span class="ellipsis">{genre.value}</span>
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	{#if shelves.loading}
 		<div class="empty"><span class="spinner"></span></div>
@@ -69,9 +75,76 @@
 <style>
 	.mixes {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 10px;
+		max-width: 760px;
 		margin-top: 20px;
+	}
+
+	.genres {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.genre {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		max-width: 220px;
+		height: 38px;
+		padding: 0 16px 0 13px;
+		border-radius: 999px;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		color: var(--text);
+		font-weight: 550;
+		transition: background 0.15s;
+	}
+
+	.genre :global(svg) {
+		color: var(--accent);
+	}
+
+	.genre .spinner,
+	.ico .spinner {
+		width: 15px;
+		height: 15px;
+	}
+
+	.genre:hover:not(:disabled) {
+		background: var(--surface-hover);
+	}
+
+	/* Phones: two tall tiles, and genres in one row that scrolls sideways. */
+	@container main (max-width: 560px) {
+		.mixes .mix {
+			flex-direction: column;
+			align-items: flex-start;
+			justify-content: space-between;
+			height: 112px;
+			padding: 12px 14px;
+		}
+
+		.mix small {
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			line-clamp: 2;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+		}
+
+		.genres {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			margin: 0 -16px;
+			padding: 0 16px 4px;
+			scrollbar-width: none;
+		}
+
+		.genre {
+			flex: none;
+		}
 	}
 
 	.mix {

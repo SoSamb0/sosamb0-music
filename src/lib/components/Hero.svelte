@@ -83,4 +83,38 @@
 		gap: 8px;
 		margin-top: 10px;
 	}
+
+	/* Phones: a large centred cover, then the title and the buttons in one row. */
+	@container main (max-width: 560px) {
+		.hero {
+			flex-direction: column;
+			align-items: center;
+			gap: 18px;
+			margin-bottom: 18px;
+			text-align: center;
+		}
+
+		.art {
+			width: min(64%, 260px);
+		}
+
+		.info {
+			align-items: center;
+			width: 100%;
+		}
+
+		h1 {
+			font-size: 26px;
+		}
+
+		.meta,
+		.actions {
+			justify-content: center;
+		}
+
+		.actions {
+			flex-wrap: nowrap;
+			margin-top: 6px;
+		}
+	}
 </style>

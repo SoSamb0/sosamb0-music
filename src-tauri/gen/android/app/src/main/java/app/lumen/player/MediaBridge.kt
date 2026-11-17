@@ -58,6 +58,16 @@ object MediaBridge {
   /** Called by Rust when the user acts on the system controls. */
   @JvmStatic external fun nativeAction(action: String)
 
+  /** Status bar and gesture bar heights in CSS pixels, for the interface's safe areas. */
+  @JvmStatic private external fun nativeInsets(top: Float, bottom: Float)
+
+  fun setInsets(top: Float, bottom: Float) {
+    try {
+      nativeInsets(top, bottom)
+    } catch (_: Throwable) {
+    }
+  }
+
   /** Hands Rust a reference to this class so it can call [update] from its own threads. */
   @JvmStatic private external fun nativeInit()
 

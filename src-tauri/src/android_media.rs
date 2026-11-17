@@ -12,6 +12,21 @@ use jni::{JNIEnv, JavaVM};
 use tauri::{AppHandle, Emitter};
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
+/// Status bar and gesture bar heights in CSS px, as last reported by the activity.
+static INSETS: std::sync::Mutex<(f32, f32)> = std::sync::Mutex::new((0.0, 0.0));
+
+pub fn insets() -> (f32, f32) {
+    *INSETS.lock().unwrap()
+}
+
+/// `MediaBridge.nativeInsets(top, bottom)`
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_app_lumen_player_MediaBridge_nativeInsets(_env: JNIEnv, _class: JClass, top: f32, bottom: f32) {
+    *INSETS.lock().unwrap() = (top, bottom);
+    if let Some(app) = APP.get() {
+        let _ = app.emit("insets", serde_json::json!({ "top": top, "bottom": bottom }));
+    }
+}
 /// The JVM and the `MediaBridge` class, captured on the main thread: classes of the app cannot
 /// be looked up by name from threads Rust started.
 static BRIDGE: OnceLock<(JavaVM, GlobalRef)> = OnceLock::new();

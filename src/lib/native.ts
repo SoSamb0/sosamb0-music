@@ -5,7 +5,7 @@ import { settings } from './settings.svelte';
 import { app } from './app.svelte';
 import { menu } from './menu.svelte';
 import { isMobile } from './platform';
-import { inTauri, listen } from './tauri';
+import { inTauri, invoke, listen } from './tauri';
 import { closeWindow, showWindow } from './window';
 
 export const GLOBAL_HOTKEYS: { keys: string; label: string; action: string }[] = [
@@ -57,8 +57,17 @@ export async function initNative() {
 	await applyHotkeys();
 }
 
+/** The page draws under the phone's status and gesture bars; these keep controls clear of them. */
+function applyInsets(i: { top: number; bottom: number }) {
+	const root = document.documentElement.style;
+	root.setProperty('--sat', `${i.top}px`);
+	root.setProperty('--sab', `${i.bottom}px`);
+}
+
 /** Android's back gesture closes whatever is on top, then walks the history, then leaves the app. */
 async function initBackButton() {
+	applyInsets(await invoke<{ top: number; bottom: number }>('safe_insets'));
+	await listen<{ top: number; bottom: number }>('insets', applyInsets);
 	const { onBackButtonPress, exit } = await import('@tauri-apps/api/app');
 	await onBackButtonPress(() => {
 		if (menu.visible) menu.close();

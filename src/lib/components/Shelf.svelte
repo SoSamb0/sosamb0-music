@@ -51,8 +51,8 @@
 		{#if onrefresh}
 			<button class="icon-btn" onclick={onrefresh} aria-label="Обновить подборку" title="Обновить подборку"><Icon name="refresh" size={16} /></button>
 		{/if}
-		<button class="icon-btn" onclick={() => scroll(-1)} disabled={atStart} aria-label="Прокрутить назад"><Icon name="left" /></button>
-		<button class="icon-btn" onclick={() => scroll(1)} disabled={atEnd} aria-label="Прокрутить вперёд"><Icon name="right" /></button>
+		<button class="icon-btn arrow" onclick={() => scroll(-1)} disabled={atStart} aria-label="Прокрутить назад"><Icon name="left" /></button>
+		<button class="icon-btn arrow" onclick={() => scroll(1)} disabled={atEnd} aria-label="Прокрутить вперёд"><Icon name="right" /></button>
 	</div>
 </div>
 <div class="shelf" bind:this={row} onscroll={update}>
@@ -97,5 +97,29 @@
 	.cell {
 		scroll-snap-align: start;
 		min-width: 0;
+	}
+
+	/* Phones: rows are swiped, so no arrows; "play all" becomes a round button. */
+	@container main (max-width: 560px) {
+		.arrow {
+			display: none;
+		}
+
+		.tools .btn {
+			width: 36px;
+			padding: 0;
+			justify-content: center;
+			font-size: 0;
+			gap: 0;
+			margin-right: 2px;
+		}
+
+		.shelf {
+			grid-auto-columns: 138px;
+			gap: 12px;
+			margin: -6px -16px 0;
+			padding: 6px 16px 10px;
+			scroll-padding: 0 16px;
+		}
 	}
 </style>

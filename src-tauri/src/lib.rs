@@ -93,6 +93,16 @@ async fn list_output_devices(state: State<'_, AppState>) -> Result<Vec<DeviceInf
     Ok(state.engine.list_devices())
 }
 
+/// Heights of the phone's status bar and gesture bar in CSS px (zero on the desktop).
+#[tauri::command]
+fn safe_insets() -> serde_json::Value {
+    #[cfg(target_os = "android")]
+    let (top, bottom) = android_media::insets();
+    #[cfg(not(target_os = "android"))]
+    let (top, bottom) = (0.0f32, 0.0f32);
+    serde_json::json!({ "top": top, "bottom": bottom })
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct CacheInfo {
@@ -209,6 +219,7 @@ pub fn run() {
             cache_contains,
             cache_open_dir,
             media::media_update,
+            safe_insets,
         ])
         .run(tauri::generate_context!())
         .expect("error while running SoSamb0 Music");

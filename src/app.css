@@ -452,6 +452,14 @@ html[data-mobile] h1 {
 	font-size: 26px;
 }
 
+html[data-mobile] .section-head {
+	margin: 24px 0 10px;
+}
+
+html[data-mobile] .section-head h2 {
+	font-size: 19px;
+}
+
 html[data-mobile] .grid {
 	grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
 	gap: 14px;
@@ -463,8 +471,8 @@ html[data-mobile] .drawer {
 	width: auto !important;
 	max-width: none !important;
 	border-radius: 0 !important;
-	padding-top: env(safe-area-inset-top);
-	padding-bottom: env(safe-area-inset-bottom);
+	padding-top: var(--sat, env(safe-area-inset-top, 0px));
+	padding-bottom: var(--sab, env(safe-area-inset-bottom, 0px));
 }
 
 /* Things that appear on mouse hover are always shown on a touch screen. */

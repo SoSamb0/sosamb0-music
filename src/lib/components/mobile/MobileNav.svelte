@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { app, type Route } from '$lib/app.svelte';
 	import { player } from '$lib/player.svelte';
-	import Cover from '../Cover.svelte';
+	import Disc from '../Disc.svelte';
+	import { settings } from '$lib/settings.svelte';
 	import Icon from '../Icon.svelte';
 
 	const TABS: { route: Route; label: string; icon: string; match: string[] }[] = [
@@ -43,7 +44,7 @@
 	{#if song}
 		<div class="mini" onpointerdown={down} onpointerup={up} role="presentation">
 			<button class="open" onclick={() => (app.nowPlaying = true)} aria-label="Открыть плеер">
-				<span class="art"><Cover id={song.coverArt} size={120} /></span>
+				<span class="art" class:round={settings.data.look.coverShape === 'round' || (settings.data.look.coverShape === 'vinyl' && settings.data.look.vinylEverywhere)}><Disc id={song.coverArt} size={120} small /></span>
 				<span class="meta">
 					<span class="title ellipsis">{song.title}</span>
 					<span class="artist ellipsis">{song.artist ?? ''}</span>
@@ -77,7 +78,7 @@
 		background: rgb(14 14 18 / 0.86);
 		backdrop-filter: blur(30px) saturate(1.4);
 		border-top: 1px solid var(--line);
-		padding-bottom: env(safe-area-inset-bottom);
+		padding-bottom: var(--sab, env(safe-area-inset-bottom, 0px));
 	}
 
 	.mini {
@@ -105,6 +106,10 @@
 		width: 44px;
 		border-radius: 7px;
 		overflow: hidden;
+	}
+
+	.art.round {
+		border-radius: 50%;
 	}
 
 	.meta {

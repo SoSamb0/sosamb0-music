@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed (Material You) icon: one colour, so the label is a hole and the arm stands apart. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <path
+      android:fillColor="#FFFFFFFF"
+      android:fillType="evenOdd"
+      android:pathData="M18,64a28,28 0 1,0 56,0a28,28 0 1,0 -56,0zM41,64a5,5 0 1,0 10,0a5,5 0 1,0 -10,0z" />
+  <path
+      android:pathData="M76,34V50L66,60"
+      android:strokeColor="#FFFFFFFF"
+      android:strokeWidth="3.4"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round" />
+  <path android:fillColor="#FFFFFFFF" android:pathData="M71.5,34a4.5,4.5 0 1,0 9,0a4.5,4.5 0 1,0 -9,0z" />
+</vector>

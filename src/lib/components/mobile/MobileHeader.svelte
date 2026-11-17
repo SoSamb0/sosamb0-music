@@ -44,7 +44,7 @@
 		align-items: center;
 		gap: 6px;
 		min-height: 52px;
-		padding: env(safe-area-inset-top) 8px 0;
+		padding: var(--sat, env(safe-area-inset-top, 0px)) 8px 0;
 	}
 
 	.grow {

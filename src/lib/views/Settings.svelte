@@ -654,4 +654,37 @@
 		text-align: center;
 		white-space: nowrap;
 	}
+
+	/* Narrow screens (phones): choices go under their label instead of squeezing it. */
+	@container main (max-width: 560px) {
+		.row {
+			padding: 14px 16px;
+		}
+
+		.row:has(> .seg),
+		.row:has(> .swatches) {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 10px;
+		}
+
+		.seg,
+		.swatches {
+			justify-content: flex-start;
+			max-width: none;
+		}
+
+		.row.sub {
+			padding-left: 30px;
+		}
+
+		.slider {
+			grid-template-columns: 1fr 44px;
+			row-gap: 8px;
+		}
+
+		.slider > .strong {
+			grid-column: 1 / -1;
+		}
+	}
 </style>

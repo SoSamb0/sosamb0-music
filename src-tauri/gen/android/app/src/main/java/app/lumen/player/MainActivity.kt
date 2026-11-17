@@ -19,14 +19,16 @@ class MainActivity : TauriActivity() {
     MediaBridge.init(this)
     window.decorView.setBackgroundColor(Color.rgb(10, 10, 13))
 
-    // Keep the web interface clear of the status bar, the camera cut-out and the gesture bar
-    // (Android 15+ always draws apps under them). The keyboard shrinks the page too.
+    // The page draws under the status bar and the gesture bar (its background continues there);
+    // the interface keeps its controls clear of them using the sizes sent here. Sides (landscape
+    // cut-out) and the keyboard are handled by padding the page.
     val content = findViewById<View>(android.R.id.content)
+    val density = resources.displayMetrics.density
     ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->
-      val bars = insets.getInsets(
-        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
-      )
-      view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+      val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+      val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+      view.setPadding(bars.left, 0, bars.right, ime.bottom)
+      MediaBridge.setInsets(bars.top / density, if (ime.bottom > 0) 0f else bars.bottom / density)
       WindowInsetsCompat.CONSUMED
     }
   }

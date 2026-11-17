@@ -110,7 +110,7 @@
 		display: flex;
 		flex-direction: column;
 		max-height: 82dvh;
-		padding-bottom: env(safe-area-inset-bottom);
+		padding-bottom: var(--sab, env(safe-area-inset-bottom, 0px));
 		border-radius: 22px 22px 0 0;
 		background: rgb(26 26 32 / 0.97);
 		backdrop-filter: blur(24px);
