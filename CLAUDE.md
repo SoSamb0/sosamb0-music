@@ -82,6 +82,11 @@ HTTP/кэш → symphonia → f64 → [ReplayGain] → [ресемплер] → 
 - Dev-сервер Vite иногда отдаёт старый CSS компонента после правки скриптом — `touch` файла помогает.
 - Десктопный код (трей, souvlaki, горячие клавиши, single-instance) — под `#[cfg(desktop)]`, зависимости в
   `cfg(not(any(android, ios)))`. Разрешения: `capabilities/default.json` — десктоп, `mobile.json` — телефон.
+- Android: сборку (`scripts/android-build.ps1`) запускать из Bash-инструмента (`powershell.exe -File …`), не из
+  PowerShell-инструмента — его песочница пишет в изолированную копию, и на диске остаётся старый APK.
+- Android: крейт `ndk` 0.9 считает ошибкой успешный `AAudioStream_write` — используем `ndk-sys` напрямую.
+- Отладка на телефоне: `adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>` → DevTools-протокол
+  WebView (debug-APK). `eprintln!` из Rust виден в `adb logcat` с тегом `RustStdoutStderr`.
 - Длинные heredoc в Bash-инструменте могут обрезаться — длинные скрипты писать файлом через Write.
 - Проверка в браузерной панели: синтетические `.click()` срабатывают, но иногда реальная мышь ведёт себя
   иначе (так нашли баг подменю) — важное проверять настоящими кликами.
