@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs><linearGradient id="grille-bright-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5CC8FF"/><stop offset="1" stop-color="#2457E8"/></linearGradient><linearGradient id="grille-bright-mk" gradientUnits="userSpaceOnUse" x1="220" y1="200" x2="800" y2="840"><stop offset="0" stop-color="#7DD3FF"/><stop offset="1" stop-color="#2F6BFF"/></linearGradient></defs>
+<rect x="64" y="64" width="896" height="896" rx="200" fill="url(#grille-bright-bg)"/>
+<circle cx="322" cy="322" r="62" fill="#F4F8FF"/>
+<circle cx="512" cy="322" r="62" fill="#F4F8FF"/>
+<circle cx="702" cy="322" r="62" fill="#0B1630"/>
+<circle cx="322" cy="512" r="62" fill="#F4F8FF"/>
+<circle cx="512" cy="512" r="62" fill="#F4F8FF"/>
+<circle cx="702" cy="512" r="62" fill="#F4F8FF"/>
+<circle cx="322" cy="702" r="62" fill="#F4F8FF"/>
+<circle cx="512" cy="702" r="62" fill="#F4F8FF"/>
+<circle cx="702" cy="702" r="62" fill="#F4F8FF"/>
+</svg>

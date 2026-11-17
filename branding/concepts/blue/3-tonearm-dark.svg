@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs><linearGradient id="tonearm-dark-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#13213D"/><stop offset="1" stop-color="#070B15"/></linearGradient><linearGradient id="tonearm-dark-mk" gradientUnits="userSpaceOnUse" x1="220" y1="200" x2="800" y2="840"><stop offset="0" stop-color="#7DD3FF"/><stop offset="1" stop-color="#2F6BFF"/></linearGradient></defs>
+<rect x="64" y="64" width="896" height="896" rx="200" fill="url(#tonearm-dark-bg)"/>
+<circle cx="468" cy="560" r="290" fill="url(#tonearm-dark-mk)"/>
+<circle cx="468" cy="560" r="46" fill="#13213D"/>
+<path d="M808 210L808 420L640 600" fill="none" stroke="#F4F8FF" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="808" cy="210" r="58" fill="#F4F8FF"/>
+</svg>

@@ -3,6 +3,7 @@
 	import { inTauri } from '$lib/tauri';
 	import { closeWindow, minimize } from '$lib/window';
 	import Icon from './Icon.svelte';
+	import LogoMark from './LogoMark.svelte';
 
 	let url = $state('');
 	let username = $state('');
@@ -29,7 +30,7 @@
 	{/if}
 
 	<form class="card" onsubmit={submit}>
-		<span class="logo" aria-hidden="true"></span>
+		<LogoMark size={60} />
 		<h1>SoSamb0 Music</h1>
 		<p class="muted lead">Подключитесь к своему серверу Navidrome</p>
 
@@ -88,14 +89,6 @@
 		border: 1px solid var(--line);
 		box-shadow: 0 30px 90px rgb(0 0 0 / 0.55);
 		animation: page-in 0.4s var(--ease);
-	}
-
-	.logo {
-		width: 44px;
-		height: 44px;
-		border-radius: 50%;
-		background: conic-gradient(from 210deg, var(--accent), rgb(var(--accent-rgb) / 0.2), var(--accent));
-		box-shadow: 0 0 34px rgb(var(--accent-rgb) / 0.6);
 	}
 
 	.lead {

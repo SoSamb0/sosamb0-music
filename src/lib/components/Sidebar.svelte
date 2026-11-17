@@ -2,6 +2,7 @@
 	import { app, type Route } from '$lib/app.svelte';
 	import { menu } from '$lib/menu.svelte';
 	import Icon from './Icon.svelte';
+	import LogoMark from './LogoMark.svelte';
 
 	const NAV: { route: Route; label: string; icon: string; match: string[] }[] = [
 		{ route: { name: 'home' }, label: 'Главная', icon: 'home', match: ['home'] },
@@ -48,7 +49,7 @@
 
 <nav class="sidebar">
 	<div class="brand" data-tauri-drag-region>
-		<span class="logo" aria-hidden="true"></span>
+		<LogoMark size={26} />
 		<span class="name">SoSamb0 Music</span>
 	</div>
 
@@ -104,15 +105,6 @@
 		height: 52px;
 		padding: 0 10px;
 		flex: none;
-	}
-
-	.logo {
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		background: conic-gradient(from 210deg, var(--accent), rgb(var(--accent-rgb) / 0.25), var(--accent));
-		box-shadow: 0 0 18px rgb(var(--accent-rgb) / 0.55);
-		pointer-events: none;
 	}
 
 	.name {
