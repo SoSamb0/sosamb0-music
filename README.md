@@ -54,6 +54,5 @@ Proof lives in the tests (`cargo test` in `src-tauri`):
 
 ## Android
 
-The engine is platform-neutral except for `output.rs`. An Android port needs a second backend
-implementing `backend.rs` (AAudio/Oboe), a touch layout for the Svelte views, and
-`npm run tauri android init`.
+In progress — see [docs/ANDROID.md](docs/ANDROID.md) for the toolchain setup and the plan.
+Notes for contributors and AI assistants are in [CLAUDE.md](CLAUDE.md).
