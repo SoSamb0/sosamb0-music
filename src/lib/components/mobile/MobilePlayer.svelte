@@ -75,6 +75,7 @@
 <div
 	class="mp bg-{bg}"
 	style:--np-strength={settings.data.look.npStrength}
+	style:--np-blur="{settings.data.look.npBlur}px"
 	style:translate="0 {pull}px"
 	class:pulling={pull > 0}
 	onpointerdown={down}
@@ -208,6 +209,22 @@
 		opacity: calc(1.35 - var(--np-strength, 0.7));
 	}
 
+	/* Always there, whatever the sliders say: keeps the top bar and the controls readable. */
+	.art-bg::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		background: linear-gradient(
+			180deg,
+			rgb(10 10 13 / 0.45) 0,
+			transparent 16%,
+			transparent 50%,
+			rgb(10 10 13 / 0.55) 68%,
+			rgb(10 10 13 / 0.8) 100%
+		);
+	}
+
 	.art-bg .layer.a {
 		opacity: calc(0.35 + var(--np-strength, 0.7) * 0.65);
 	}
@@ -216,11 +233,12 @@
 		position: absolute;
 		left: 50%;
 		top: 50%;
-		width: 170%;
-		height: 170%;
+		/* Oversized only as much as the blur needs to hide its soft edges. */
+		width: calc(100% + var(--np-blur, 60px) * 4);
+		height: calc(100% + var(--np-blur, 60px) * 4);
 		object-fit: cover;
 		translate: -50% -50%;
-		filter: blur(60px) saturate(1.6) brightness(0.85);
+		filter: blur(var(--np-blur, 60px)) saturate(1.4) brightness(0.9);
 		animation: fade-in 0.8s ease;
 	}
 

@@ -259,6 +259,21 @@
 					/>
 					<span class="tnum muted">{Math.round(look.npStrength * 100)}%</span>
 				</label>
+				{#if look.npBackground !== 'dim'}
+					<label class="row sub slider">
+						<span class="strong">Размытие</span>
+						<input
+							type="range"
+							min="0"
+							max="80"
+							step="2"
+							value={look.npBlur}
+							style:--fill="{(look.npBlur / 80) * 100}%"
+							oninput={(e) => setLook('npBlur', +e.currentTarget.value)}
+						/>
+						<span class="tnum muted">{look.npBlur === 0 ? 'Нет' : `${Math.round((look.npBlur / 80) * 100)}%`}</span>
+					</label>
+				{/if}
 			{/if}
 
 			<div class="row">

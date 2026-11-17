@@ -47,7 +47,7 @@
 	}
 </script>
 
-<div class="np bg-{look.npBackground}" style:--np-strength={look.npStrength} class:solo={!showRight} class:vinyl={look.coverShape !== 'square'}>
+<div class="np bg-{look.npBackground}" style:--np-strength={look.npStrength} style:--np-blur="{look.npBlur}px" class:solo={!showRight} class:vinyl={look.coverShape !== 'square'}>
 	{#if art && (look.npBackground === 'blur' || look.npBackground === 'motion')}
 		<div class="art-bg" aria-hidden="true">
 			{#key art}
@@ -147,7 +147,7 @@
 		height: 140%;
 		object-fit: cover;
 		translate: -50% -50%;
-		filter: blur(70px) saturate(1.6) brightness(0.8);
+		filter: blur(var(--np-blur, 70px)) saturate(1.6) brightness(0.8);
 		animation: fade-in 1s ease;
 	}
 

@@ -56,6 +56,8 @@ export interface Look {
 	backdropStrength: number;
 	/** How strongly the cover shows through the full player's background (0.2..1). */
 	npStrength: number;
+	/** Blur of the cover behind the full player, in px (0 = sharp). */
+	npBlur: number;
 	npLyrics: boolean;
 	lyricsSize: 's' | 'm' | 'l';
 	lyricsAlign: 'left' | 'center';
@@ -172,6 +174,7 @@ function defaults(): Persisted {
 			appBackdrop: true,
 			backdropStrength: 0.42,
 			npStrength: 0.7,
+			npBlur: 60,
 			npLyrics: true,
 			lyricsSize: 'm',
 			lyricsAlign: 'left',
