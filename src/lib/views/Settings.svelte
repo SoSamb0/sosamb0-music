@@ -324,6 +324,28 @@
 			</div>
 
 			<div class="row">
+				<div class="grow">
+					<div class="strong">Визуализатор</div>
+					<div class="hint">В полноэкранном плеере. Анализ звука работает, только пока визуализатор на экране, и не влияет на bit-perfect.</div>
+				</div>
+			</div>
+			<div class="row options">
+				{#each [['off', 'Выключен'], ['bars', 'Полосы'], ['wave', 'Волна'], ['ring', 'Кольцо'], ['vu', 'Стрелочные индикаторы'], ['glow', 'Свечение']] as [value, label] (value)}
+					<button class="chip" class:on={look.vizStyle === value} onclick={() => setLook('vizStyle', value as Look['vizStyle'])}>{label}</button>
+				{/each}
+			</div>
+			{#if look.vizStyle !== 'off'}
+				<div class="row sub">
+					<div class="grow"><div class="strong">Где показывать</div></div>
+					<div class="seg">
+						{#each [['below', 'Под текстом'], ['replace', 'Вместо текста'], ['background', 'На фоне']] as [value, label] (value)}
+							<button class="chip" class:on={look.vizPlace === value} onclick={() => setLook('vizPlace', value as Look['vizPlace'])}>{label}</button>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<div class="row">
 				<div class="grow"><div class="strong">Масштаб интерфейса</div></div>
 				<div class="seg">
 					{#each [0.9, 1, 1.1, 1.25] as value (value)}

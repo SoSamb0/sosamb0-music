@@ -68,6 +68,11 @@ fn player_set_dsp(state: State<AppState>, config: DspConfig) {
 }
 
 #[tauri::command]
+fn player_set_visualizer(state: State<AppState>, on: bool) {
+    state.engine.send(Command::SetVisualizer(on));
+}
+
+#[tauri::command]
 fn player_set_output(state: State<AppState>, config: OutputConfig) {
     state.engine.send(Command::SetOutput(config));
 }
@@ -171,6 +176,7 @@ pub fn run() {
             player_set_volume,
             player_set_dsp,
             player_set_output,
+            player_set_visualizer,
             player_set_options,
             list_output_devices,
             cache_info,

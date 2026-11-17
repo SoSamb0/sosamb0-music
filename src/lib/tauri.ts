@@ -43,7 +43,8 @@ export type EngineEvent =
 	| { type: 'trackStarted'; token: number }
 	| { type: 'ended' }
 	| { type: 'error'; token: number | null; message: string }
-	| { type: 'signal'; path: SignalPath | null };
+	| { type: 'signal'; path: SignalPath | null }
+	| { type: 'viz'; bands: number[]; wave: number[]; level: [number, number] };
 
 export interface TrackReq {
 	token: number;
@@ -71,6 +72,24 @@ class SimEngine {
 	private volume = 1;
 	private dsp = false;
 	private timer: ReturnType<typeof setInterval> | null = null;
+	private vizTimer: ReturnType<typeof setInterval> | null = null;
+
+	/** Plausible fake spectrum for demo mode: a kick on the beat, wandering mids, some air. */
+	private fakeViz() {
+		if (!this.playing) return;
+		const t = this.position;
+		const beat = Math.pow(Math.max(0, Math.cos(t * Math.PI * 2)), 8);
+		const bands = Array.from({ length: 48 }, (_, i) => {
+			const shape = 0.75 - i / 80 + 0.18 * Math.sin(i * 0.45 + t * 1.7) + 0.12 * Math.sin(i * 1.3 - t * 3.1);
+			const kick = i < 7 ? beat * 0.45 * (1 - i / 7) : 0;
+			return Math.round(Math.max(0, Math.min(1, shape * (0.75 + 0.25 * Math.random()) + kick)) * 255);
+		});
+		const wave = Array.from({ length: 128 }, (_, i) =>
+			Math.round(127 * (0.45 * Math.sin(i * 0.19 + t * 9) + 0.25 * Math.sin(i * 0.77 + t * 23) + 0.15 * (Math.random() - 0.5)) * (0.6 + beat * 0.4))
+		);
+		const lv = 0.62 + beat * 0.25;
+		this.emit({ type: 'viz', bands, wave, level: [Math.min(1, lv + Math.random() * 0.05), Math.min(1, lv - 0.03 + Math.random() * 0.05)] });
+	}
 
 	subscribe(fn: Listener) {
 		this.listeners.add(fn);
@@ -181,6 +200,10 @@ class SimEngine {
 				this.signal();
 				break;
 			}
+			case 'player_set_visualizer':
+				if (this.vizTimer) clearInterval(this.vizTimer);
+				this.vizTimer = args.on ? setInterval(() => this.fakeViz(), 33) : null;
+				return undefined;
 			case 'player_set_output':
 				this.exclusive = args.config.exclusive;
 				this.signal();

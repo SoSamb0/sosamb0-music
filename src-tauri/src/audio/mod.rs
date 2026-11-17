@@ -12,6 +12,7 @@
 //! exclusive-mode device running at the source rate, the samples reaching the DAC are
 //! bit-identical to the decoded file. See `convert::tests` for the proof.
 
+pub mod analyzer;
 pub mod backend;
 pub mod convert;
 pub mod deck;
@@ -179,4 +180,6 @@ pub enum EngineEvent {
     Error { token: Option<u64>, message: String },
     #[serde(rename_all = "camelCase")]
     Signal { path: Option<SignalPath> },
+    /// Spectrum and levels for the visualisers, ~30 per second while one is shown.
+    Viz(analyzer::VizFrame),
 }

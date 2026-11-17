@@ -149,6 +149,16 @@
 		onremove?.(indexes);
 	}
 
+	/** Select exactly these rows (e.g. the duplicates a page found). */
+	export function selectIndexes(indexes: number[]) {
+		selected.clear();
+		for (const i of indexes) selected.add(i);
+		multi = true;
+		anchor = indexes[0] ?? null;
+		// Bring the first one into view.
+		queueMicrotask(() => document.querySelectorAll('.list .row.selected')[0]?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+	}
+
 	/** Select every track of the list (also exported for "select all" buttons on pages). */
 	export function selectAll() {
 		songs.forEach((_, i) => selected.add(i));

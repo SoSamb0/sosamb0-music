@@ -5,14 +5,49 @@
 	import Disc from './Disc.svelte';
 	import Icon from './Icon.svelte';
 	import LyricsView from './LyricsView.svelte';
+	import Visualizer from './Visualizer.svelte';
+	import { menu } from '$lib/menu.svelte';
+	import type { Look } from '$lib/settings.svelte';
 
 	const song = $derived(player.current);
 	const look = $derived(settings.data.look);
 	const hasLyrics = $derived(look.npLyrics && (player.lyricsLoading || !!player.lyrics?.lines.length));
 	const art = $derived(app.api?.coverUrl(song?.coverArt, 600) ?? '');
+
+	const vizOn = $derived(look.vizStyle !== 'off');
+	const vizInColumn = $derived(vizOn && look.vizPlace !== 'background');
+	const showLyrics = $derived(hasLyrics && !(vizOn && look.vizPlace === 'replace'));
+	const showRight = $derived(showLyrics || vizInColumn);
+
+	const STYLES: [Look['vizStyle'], string][] = [
+		['off', 'Без визуализатора'],
+		['bars', 'Полосы'],
+		['wave', 'Волна'],
+		['ring', 'Кольцо'],
+		['vu', 'Стрелочные индикаторы'],
+		['glow', 'Свечение']
+	];
+	const PLACES: [Look['vizPlace'], string][] = [
+		['below', 'Под текстом'],
+		['replace', 'Вместо текста'],
+		['background', 'На фоне']
+	];
+
+	function set<K extends 'vizStyle' | 'vizPlace'>(key: K, value: Look[K]) {
+		settings.data.look[key] = value;
+		settings.save();
+	}
+
+	function vizMenu(e: MouseEvent) {
+		menu.open(e, [
+			...STYLES.map(([v, label]) => ({ label, icon: look.vizStyle === v ? 'check' : undefined, action: () => set('vizStyle', v) })),
+			{ label: '', separator: true },
+			...PLACES.map(([v, label]) => ({ label, icon: look.vizPlace === v ? 'check' : undefined, action: () => set('vizPlace', v) }))
+		]);
+	}
 </script>
 
-<div class="np bg-{look.npBackground}" class:solo={!hasLyrics} class:vinyl={look.coverShape !== 'square'}>
+<div class="np bg-{look.npBackground}" class:solo={!showRight} class:vinyl={look.coverShape !== 'square'}>
 	{#if art && (look.npBackground === 'blur' || look.npBackground === 'motion')}
 		<div class="art-bg" aria-hidden="true">
 			{#key art}
@@ -22,7 +57,12 @@
 		</div>
 	{/if}
 
+	{#if vizOn && look.vizPlace === 'background'}
+		<div class="viz-bg" aria-hidden="true"><Visualizer style={look.vizStyle as Exclude<Look['vizStyle'], 'off'>} faint /></div>
+	{/if}
+
 	<button class="icon-btn close" onclick={() => (app.nowPlaying = false)} aria-label="Свернуть"><Icon name="down" size={22} /></button>
+	<button class="icon-btn viz-btn" class:on={vizOn} onclick={vizMenu} aria-label="Визуализатор" title="Визуализатор"><Icon name="wave" size={20} /></button>
 	{#if song}
 		<div class="left">
 			<div class="art"><Disc id={song.coverArt} size={800} eager /></div>
@@ -38,8 +78,13 @@
 				</div>
 			</div>
 		</div>
-		{#if hasLyrics}
-			<div class="right"><LyricsView large /></div>
+		{#if showRight}
+			<div class="right">
+				{#if showLyrics}<div class="lyr"><LyricsView large /></div>{/if}
+				{#if vizInColumn}
+					<div class="viz" class:full={!showLyrics}><Visualizer style={look.vizStyle as Exclude<Look['vizStyle'], 'off'>} /></div>
+				{/if}
+			</div>
 		{/if}
 	{:else}
 		<div class="empty"><p>Ничего не играет</p></div>
@@ -230,9 +275,47 @@
 	}
 
 	.right {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
 		height: 100%;
 		min-height: 0;
 		min-width: 0;
+	}
+
+	.left,
+	.right {
+		position: relative;
+		z-index: 1;
+	}
+
+	.lyr {
+		flex: 1;
+		min-height: 0;
+	}
+
+	.viz {
+		flex: none;
+		height: 190px;
+	}
+
+	.viz.full {
+		flex: 1;
+		height: auto;
+	}
+
+	.viz-bg {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+	}
+
+	.viz-btn {
+		position: absolute;
+		top: 14px;
+		right: 18px;
+		z-index: 2;
 	}
 
 	@media (max-width: 900px) {

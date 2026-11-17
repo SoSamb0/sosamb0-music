@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { app, type Route } from '$lib/app.svelte';
+	import { SMART, type SmartKind } from '$lib/library.svelte';
 	import { menu } from '$lib/menu.svelte';
 	import Icon from './Icon.svelte';
 	import LogoMark from './LogoMark.svelte';
@@ -73,6 +74,16 @@
 			<button class="link" class:active={item.match.includes(current.name)} onclick={() => app.go(item.route)}>
 				<Icon name={item.icon} size={18} />
 				<span>{item.label}</span>
+			</button>
+		{/each}
+	</div>
+
+	<div class="head"><span>Умные плейлисты</span></div>
+	<div class="links">
+		{#each Object.entries(SMART) as [id, s] (id)}
+			<button class="link small" class:active={current.name === 'smart' && current.id === id} onclick={() => app.go({ name: 'smart', id: id as SmartKind })} title={s.hint}>
+				<Icon name={s.icon} size={16} />
+				<span class="ellipsis">{s.title}</span>
 			</button>
 		{/each}
 	</div>

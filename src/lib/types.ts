@@ -25,6 +25,12 @@ export interface Song {
 	channelCount?: number;
 	starred?: string;
 	replayGain?: ReplayGain;
+	/** How many times it was played (server-wide). */
+	playCount?: number;
+	/** When it was last played (OpenSubsonic, ISO date). */
+	played?: string;
+	/** When it was added to the library (ISO date). */
+	created?: string;
 }
 
 export interface Album {

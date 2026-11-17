@@ -8,6 +8,7 @@ export type Route =
 	| { name: 'home' }
 	| { name: 'albums' }
 	| { name: 'songs' }
+	| { name: 'smart'; id: 'top' | 'forgotten' | 'new' }
 	| { name: 'album'; id: string }
 	| { name: 'artists' }
 	| { name: 'artist'; id: string }

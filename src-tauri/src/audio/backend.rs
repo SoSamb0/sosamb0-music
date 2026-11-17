@@ -22,6 +22,8 @@ pub struct OutShared {
     pub dither: AtomicBool,
     /// Raised by the backend when the device stopped working; the engine reopens it.
     pub failed: AtomicBool,
+    /// What was last sent to the device, for the visualisers. Only ever try-locked by the output thread.
+    pub tap: parking_lot::Mutex<super::analyzer::Tap>,
 }
 
 impl OutShared {
@@ -31,6 +33,7 @@ impl OutShared {
             volume: AtomicU64::new(1.0f64.to_bits()),
             dither: AtomicBool::new(false),
             failed: AtomicBool::new(false),
+            tap: parking_lot::Mutex::new(super::analyzer::Tap::new()),
         }
     }
 

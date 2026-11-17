@@ -2,6 +2,7 @@ import { app } from './app.svelte';
 import { fetchLrclib } from './lyrics';
 import { settings } from './settings.svelte';
 import { SvelteSet } from 'svelte/reactivity';
+import { setVizFrame } from './viz';
 import { invoke, listen, onEngineEvent, type EngineEvent, type PlayState, type SignalPath, type TrackReq } from './tauri';
 import type { Lyrics, Song } from './types';
 
@@ -164,6 +165,9 @@ class Player {
 			}
 			case 'signal':
 				this.signal = e.path;
+				break;
+			case 'viz':
+				setVizFrame(e);
 				break;
 		}
 	}

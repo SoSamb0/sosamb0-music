@@ -74,6 +74,11 @@ const starredSongs = new Set<string>();
 				song.starred = '2026-01-01T00:00:00Z';
 				starredSongs.add(song.id);
 			}
+			// Listening history, so the smart playlists have something to show.
+			const day = 86_400_000;
+			song.playCount = r() > 0.3 ? Math.floor(r() ** 2 * 60) + 1 : 0;
+			if (song.playCount) song.played = new Date(Date.now() - r() * 240 * day).toISOString();
+			song.created = new Date(Date.now() - ((14 - a) * 25 + t) * day).toISOString();
 			songs.set(song.id, song);
 			list.push(song);
 		}

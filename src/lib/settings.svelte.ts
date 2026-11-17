@@ -59,6 +59,10 @@ export interface Look {
 	lyricsAlign: 'left' | 'center';
 	scale: number;
 	animations: boolean;
+	/** Visualiser in the full-screen player. */
+	vizStyle: 'off' | 'bars' | 'wave' | 'ring' | 'vu' | 'glow';
+	/** Where: instead of the lyrics, under them, or behind everything. */
+	vizPlace: 'replace' | 'below' | 'background';
 }
 
 /**
@@ -144,7 +148,9 @@ function defaults(): Persisted {
 			lyricsSize: 'm',
 			lyricsAlign: 'left',
 			scale: 1,
-			animations: true
+			animations: true,
+			vizStyle: 'off',
+			vizPlace: 'below'
 		}
 	};
 }

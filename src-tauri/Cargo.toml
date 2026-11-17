@@ -26,6 +26,7 @@ serde_json = "1"
 # progressive download to finish before playback could start.
 symphonia = { version = "0.6.1", default-features = false, features = ["opt-simd", "all-codecs", "all-formats", "id3v2"] }
 rubato = "5.1.0"
+realfft = "3.5.1"
 rtrb = "0.4.1"
 ureq = "3.5.2"
 crossbeam-channel = "0.5.17"

@@ -179,6 +179,7 @@ impl Output {
             chunk.commit_all();
         }
         self.shared.frames_played.store(0, Ordering::Release);
+        self.shared.tap.lock().clear();
         self.fade_out = false;
         self.gain.current = if fade_in { 0.0 } else { self.shared.volume() };
     }
@@ -223,6 +224,12 @@ impl Output {
                     s.samples.extend_from_slice(a);
                     s.samples.extend_from_slice(b);
                     chunk.commit_all();
+                }
+            }
+            if real > 0 {
+                // Never wait for the visualiser: skip this period if the engine is reading.
+                if let Some(mut tap) = self.shared.tap.try_lock() {
+                    tap.push(&s.samples[..real * CHANNELS]);
                 }
             }
             s.samples.resize(frames * CHANNELS, 0.0);

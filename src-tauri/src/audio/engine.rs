@@ -37,6 +37,8 @@ pub enum Command {
     Seek(f64),
     SetVolume(f64),
     SetDsp(DspConfig),
+    /// Whether a visualiser is on screen and wants spectrum frames.
+    SetVisualizer(bool),
     SetOutput(OutputConfig),
     SetOptions(Options),
     ListDevices(Sender<Vec<DeviceInfo>>),
@@ -128,6 +130,9 @@ pub struct Engine {
     last_status: Instant,
     last_state: PlayState,
     last_signal: Option<SignalPath>,
+    viz: bool,
+    analyzer: Option<super::analyzer::Analyzer>,
+    last_viz: Instant,
 }
 
 impl Engine {
@@ -174,6 +179,9 @@ impl Engine {
             last_status: Instant::now(),
             last_state: PlayState::Stopped,
             last_signal: None,
+            viz: false,
+            analyzer: None,
+            last_viz: Instant::now(),
         };
         std::thread::Builder::new()
             .name("lumen-engine".into())
@@ -273,6 +281,13 @@ impl Engine {
             }
             Command::SetVolume(v) => self.shared.set_volume(v),
             Command::SetDsp(cfg) => self.dsp.set_config(cfg),
+            Command::SetVisualizer(on) => {
+                self.viz = on;
+                if !on {
+                    // Free the FFT buffers while nothing is shown.
+                    self.analyzer = None;
+                }
+            }
             Command::SetOutput(cfg) => {
                 if cfg != self.out_cfg {
                     self.out_cfg = cfg;
@@ -796,7 +811,22 @@ impl Engine {
         }
 
         self.update_signal();
+        self.visualize();
         self.status(false);
+    }
+
+    fn visualize(&mut self) {
+        if !self.viz || self.paused || self.cur.is_none() || self.last_viz.elapsed() < Duration::from_millis(33) {
+            return;
+        }
+        let Some(rate) = self.dev.as_ref().map(|d| d.rate) else { return };
+        self.last_viz = Instant::now();
+        let analyzer = self.analyzer.get_or_insert_with(super::analyzer::Analyzer::new);
+        let frame = {
+            let tap = self.shared.tap.lock();
+            analyzer.analyze(&tap, rate)
+        };
+        self.event(EngineEvent::Viz(frame));
     }
 
     fn update_signal(&mut self) {
