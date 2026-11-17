@@ -12,6 +12,7 @@ export type Route =
 	| { name: 'album'; id: string }
 	| { name: 'artists' }
 	| { name: 'artist'; id: string }
+	| { name: 'library' }
 	| { name: 'playlists' }
 	| { name: 'playlist'; id: string }
 	| { name: 'favorites' }
@@ -78,6 +79,17 @@ class App {
 	back() {
 		if (this.nowPlaying) this.nowPlaying = false;
 		else if (this.cursor > 0) this.cursor--;
+	}
+
+	/** Close the topmost layer or go back one page. False when there is nothing left to close. */
+	closeTop(): boolean {
+		if (this.question) this.answer(null);
+		else if (this.soundOpen) this.soundOpen = false;
+		else if (this.panel) this.panel = null;
+		else if (this.nowPlaying) this.nowPlaying = false;
+		else if (this.cursor > 0) this.cursor--;
+		else return false;
+		return true;
 	}
 
 	forward() {

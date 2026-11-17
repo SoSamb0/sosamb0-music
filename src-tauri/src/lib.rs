@@ -1,6 +1,17 @@
 mod audio;
 mod discord;
+#[cfg(desktop)]
 mod media;
+
+/// Phones get lock-screen controls through Android's MediaSession (see docs/ANDROID.md, part 4);
+/// until then the UI's updates are accepted and ignored.
+#[cfg(mobile)]
+mod media {
+    #[tauri::command]
+    pub fn media_update(info: serde_json::Value) {
+        let _ = info;
+    }
+}
 
 use std::path::PathBuf;
 
@@ -135,7 +146,9 @@ async fn cache_clear(state: State<'_, AppState>) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(desktop)]
+    let builder = builder
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // A second launch just brings the running player to the front.
             if let Some(window) = app.get_webview_window("main") {
@@ -144,8 +157,9 @@ pub fn run() {
                 let _ = window.set_focus();
             }
         }))
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
+    builder
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
             let cache_dir = app.path().app_cache_dir()?.join("stream");
             let handle = app.handle().clone();
@@ -161,9 +175,12 @@ pub fn run() {
                 let _ = handle.emit("discord", status);
             });
             app.manage(AppState { engine, discord, prefetch, cache_dir });
-            app.manage(media::Media::default());
-            media::init_controls(app.handle());
-            media::init_tray(app.handle())?;
+            #[cfg(desktop)]
+            {
+                app.manage(media::Media::default());
+                media::init_controls(app.handle());
+                media::init_tray(app.handle())?;
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

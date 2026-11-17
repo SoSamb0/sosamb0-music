@@ -141,7 +141,7 @@ impl Engine {
         let (tx, rx) = crossbeam_channel::unbounded();
         let (producer, consumer) = RingBuffer::new(RING_CAPACITY);
         let shared = Arc::new(OutShared::new());
-        let out = super::output::spawn(consumer, shared.clone());
+        let out = super::spawn_output(consumer, shared.clone());
         source::remove_stale_parts(&cache_dir);
 
         let engine = Engine {

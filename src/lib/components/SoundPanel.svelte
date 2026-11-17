@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { isMobile } from '$lib/platform';
 	import { app } from '$lib/app.svelte';
 	import { logFreqs, response } from '$lib/eqmath';
 	import { player } from '$lib/player.svelte';
@@ -244,6 +245,15 @@
 				<p class="hint">Треки одного альбома всегда идут без паузы и без кроссфейда — как задумано автором.</p>
 			</div>
 		{:else}
+			{#if isMobile}
+			<div class="block">
+				<p class="hint">
+					Звук идёт через системный микшер Android в формате 32 бит float — без обрезки разрядности.
+					Если частота трека совпадает с частотой телефона (обычно 48 кГц), пересчёта нет; иначе её
+					пересчитывает ресемплер плеера. Громкость — кнопками телефона: ползунок в плеере на 100% звук не трогает.
+				</p>
+			</div>
+			{:else}
 			<div class="block">
 				<label class="line">
 					<span>Устройство</span>
@@ -262,6 +272,7 @@
 						onclick={() => { output.exclusive = !output.exclusive; settings.pushOutput(); }}></button>
 				</div>
 			</div>
+			{/if}
 
 			<div class="block">
 				<h3>Звуковой тракт</h3>
@@ -303,7 +314,7 @@
 							<span class="step">Устройство</span>
 							<span>
 								{signal.device.deviceName} · {signal.device.float ? '32 бит float' : `${signal.device.bits} бит`} · {rate(signal.device.rate)}
-								· {signal.device.exclusive ? 'эксклюзивно' : 'через микшер Windows'}{signal.dithered ? ' · дизеринг' : ''}
+								· {signal.device.exclusive ? 'эксклюзивно' : isMobile ? 'через микшер Android' : 'через микшер Windows'}{signal.dithered ? ' · дизеринг' : ''}
 							</span>
 						</li>
 					</ol>

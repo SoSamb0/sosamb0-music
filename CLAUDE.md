@@ -1,7 +1,7 @@
 # SoSamb0 Music
 
-Hi-fi клиент для Navidrome (Subsonic API). Сейчас есть версия для Windows; следующая задача —
-**Android APK**, план в [docs/ANDROID.md](docs/ANDROID.md).
+Hi-fi клиент для Navidrome (Subsonic API). Версия для Windows и Android (Android в работе: состояние и
+план — [docs/ANDROID.md](docs/ANDROID.md)).
 
 ## Пользователь
 
@@ -25,8 +25,11 @@ npm run dev                         # интерфейс в браузере: ht
 npm run check                       # проверка типов Svelte/TS
 cd src-tauri && cargo test --lib    # тесты звукового движка (26 шт., 2 живых — с --ignored)
 npm run tauri build                 # релиз: src-tauri/target/release/SoSamb0 Music.exe и NSIS-установщик
+powershell -ExecutionPolicy Bypass -File scripts/android-build.ps1 [-Install]   # APK для телефона
 ```
 
+- Телефонная раскладка включается по user agent (`src/lib/platform.ts`, `isMobile`): в браузерной панели —
+  `resize_window` с пресетом `mobile`. Мобильные компоненты — `src/lib/components/mobile`.
 - Превью интерфейса в браузерной панели: `preview_start` с именем `lumen-ui` (`.claude/launch.json`).
   На экране входа «Посмотреть на демо-библиотеке» — интерфейс работает без сервера, а `SimEngine`
   в `src/lib/tauri.ts` имитирует движок (позиция, сигнальный тракт, спектр для визуализатора).
@@ -52,6 +55,7 @@ HTTP/кэш → symphonia → f64 → [ReplayGain] → [ресемплер] → 
 | `src-tauri/src/audio/prefetch.rs` | Фоновая загрузка очереди в кэш |
 | `src-tauri/src/audio/backend.rs` | **Контракт вывода звука** (`OutCmd`, `OutShared`) — то, что реализует платформа |
 | `src-tauri/src/audio/output.rs` | Вывод для Windows (WASAPI shared/exclusive) |
+| `src-tauri/src/audio/output_android.rs` | Вывод для Android (AAudio, float, родная частота устройства) |
 | `src-tauri/src/audio/dsp.rs`, `convert.rs`, `resampler.rs`, `analyzer.rs` | EQ/эффекты, конвертация в формат устройства, ресемплер, спектр для визуализатора |
 | `src-tauri/src/media.rs` | Системные медиакнопки Windows (souvlaki) и трей |
 | `src-tauri/src/discord.rs` | Статус Discord через локальный pipe + поиск публичной обложки |
@@ -75,6 +79,9 @@ HTTP/кэш → symphonia → f64 → [ReplayGain] → [ресемплер] → 
   `$state.raw`. `{@const}` только прямо внутри блока (`{#each}`, `{#if}`).
 - Анализатор визуализатора только читает звук (`try_lock`, никогда не блокирует поток вывода) и работает,
   лишь пока визуализатор на экране.
+- Dev-сервер Vite иногда отдаёт старый CSS компонента после правки скриптом — `touch` файла помогает.
+- Десктопный код (трей, souvlaki, горячие клавиши, single-instance) — под `#[cfg(desktop)]`, зависимости в
+  `cfg(not(any(android, ios)))`. Разрешения: `capabilities/default.json` — десктоп, `mobile.json` — телефон.
 - Длинные heredoc в Bash-инструменте могут обрезаться — длинные скрипты писать файлом через Write.
 - Проверка в браузерной панели: синтетические `.click()` срабатывают, но иногда реальная мышь ведёт себя
   иначе (так нашли баг подменю) — важное проверять настоящими кликами.

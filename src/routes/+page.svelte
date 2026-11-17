@@ -14,6 +14,12 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import SoundPanel from '$lib/components/SoundPanel.svelte';
 	import Titlebar from '$lib/components/Titlebar.svelte';
+	import MobileHeader from '$lib/components/mobile/MobileHeader.svelte';
+	import MobileNav from '$lib/components/mobile/MobileNav.svelte';
+	import MobilePlayer from '$lib/components/mobile/MobilePlayer.svelte';
+	import { isMobile } from '$lib/platform';
+	import Library from '$lib/views/Library.svelte';
+	import Playlists from '$lib/views/Playlists.svelte';
 	import { initNative, isQuitting } from '$lib/native';
 	import { player } from '$lib/player.svelte';
 	import { settings } from '$lib/settings.svelte';
@@ -72,6 +78,8 @@
 		};
 	});
 
+	if (isMobile) document.documentElement.dataset.mobile = '';
+
 	$effect(() => {
 		document.documentElement.dataset.motion = look.animations ? 'on' : 'off';
 	});
@@ -129,10 +137,44 @@
 	}
 </script>
 
+{#snippet views()}
+	{#key JSON.stringify(route)}
+		{#if route.name === 'home'}<Home />
+		{:else if route.name === 'albums'}<Albums />
+		{:else if route.name === 'songs'}<Songs />
+		{:else if route.name === 'smart'}<SmartView kind={route.id} />
+		{:else if route.name === 'album'}<AlbumView id={route.id} />
+		{:else if route.name === 'artists'}<Artists />
+		{:else if route.name === 'artist'}<ArtistView id={route.id} />
+		{:else if route.name === 'playlist'}<PlaylistView id={route.id} />
+		{:else if route.name === 'favorites'}<Favorites />
+		{:else if route.name === 'genres'}<Genres />
+		{:else if route.name === 'genre'}<Albums genre={route.id} />
+		{:else if route.name === 'search'}<Search q={route.q} />
+		{:else if route.name === 'stats'}<Stats />
+		{:else if route.name === 'settings'}<Settings />
+		{:else if route.name === 'library'}<Library />
+		{:else if route.name === 'playlists'}<Playlists />
+		{/if}
+	{/key}
+{/snippet}
+
 <svelte:window onkeydown={onKey} onmouseup={onMouse} oncontextmenu={(e) => e.preventDefault()} />
 
 {#if !app.api}
 	<Login />
+{:else if isMobile}
+	<div class="app mobile">
+		{#if backdrop}
+			{#key backdrop}<img class="backdrop" src={backdrop} alt="" style:--strength={look.backdropStrength} />{/key}
+		{/if}
+		<div class="shade"></div>
+		<MobileHeader />
+		<main bind:this={scroller}>{@render views()}</main>
+		<MobileNav />
+	</div>
+	{#if app.nowPlaying}<MobilePlayer />{/if}
+	{#if app.soundOpen}<SoundPanel />{/if}
 {:else if app.mini}
 	{#if backdrop}<img class="backdrop" src={backdrop} alt="" />{/if}
 	<MiniPlayer />
@@ -148,23 +190,7 @@
 			<Titlebar bind:this={titlebar} />
 			<div class="stage">
 				<main bind:this={scroller}>
-					{#key JSON.stringify(route)}
-						{#if route.name === 'home'}<Home />
-						{:else if route.name === 'albums'}<Albums />
-						{:else if route.name === 'songs'}<Songs />
-						{:else if route.name === 'smart'}<SmartView kind={route.id} />
-						{:else if route.name === 'album'}<AlbumView id={route.id} />
-						{:else if route.name === 'artists'}<Artists />
-						{:else if route.name === 'artist'}<ArtistView id={route.id} />
-						{:else if route.name === 'playlist'}<PlaylistView id={route.id} />
-						{:else if route.name === 'favorites'}<Favorites />
-						{:else if route.name === 'genres'}<Genres />
-						{:else if route.name === 'genre'}<Albums genre={route.id} />
-						{:else if route.name === 'search'}<Search q={route.q} />
-						{:else if route.name === 'stats'}<Stats />
-						{:else if route.name === 'settings'}<Settings />
-						{/if}
-					{/key}
+					{@render views()}
 				</main>
 				{#if app.panel}
 					<aside class="panel">
@@ -270,6 +296,18 @@
 	.bar {
 		grid-column: 1 / -1;
 		z-index: 30;
+	}
+
+	.app.mobile {
+		display: flex;
+		flex-direction: column;
+		height: 100dvh;
+	}
+
+	.app.mobile main {
+		flex: 1;
+		min-height: 0;
+		overscroll-behavior: contain;
 	}
 
 	@media (max-width: 1040px) {

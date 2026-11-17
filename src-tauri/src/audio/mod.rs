@@ -14,12 +14,16 @@
 
 pub mod analyzer;
 pub mod backend;
+// Android outputs float only and has a single device, so some formats and fields go unused there.
+#[cfg_attr(target_os = "android", allow(dead_code))]
 pub mod convert;
 pub mod deck;
 pub mod dsp;
 pub mod engine;
 #[cfg(windows)]
 pub mod output;
+#[cfg(target_os = "android")]
+pub mod output_android;
 pub mod prefetch;
 pub mod resampler;
 pub mod source;
@@ -28,6 +32,11 @@ use serde::{Deserialize, Serialize};
 
 pub use dsp::DspConfig;
 pub use engine::{Command, Engine, EngineHandle};
+
+#[cfg(windows)]
+use output::spawn as spawn_output;
+#[cfg(target_os = "android")]
+use output_android::spawn as spawn_output;
 
 /// A request to play one track. `token` identifies the queue entry on the UI side.
 #[derive(Clone, Debug, Deserialize)]

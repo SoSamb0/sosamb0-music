@@ -2,6 +2,8 @@
 
 import { player } from './player.svelte';
 import { settings } from './settings.svelte';
+import { app } from './app.svelte';
+import { isMobile } from './platform';
 import { inTauri, listen } from './tauri';
 import { closeWindow, showWindow } from './window';
 
@@ -49,13 +51,22 @@ export async function initNative() {
 	if (!inTauri) return;
 	await listen<string>('media-key', runAction);
 	await listen<string>('tray', runAction);
+	if (isMobile) return initBackButton();
 	await listen<typeof settings.discordStatus>('discord', (status) => (settings.discordStatus = status));
 	await applyHotkeys();
 }
 
+/** Android's back gesture closes whatever is on top, then walks the history, then leaves the app. */
+async function initBackButton() {
+	const { onBackButtonPress, exit } = await import('@tauri-apps/api/app');
+	await onBackButtonPress(() => {
+		if (!app.closeTop()) exit(0).catch(() => {});
+	});
+}
+
 /** Register or release the global hotkeys according to the setting. */
 export async function applyHotkeys(): Promise<boolean> {
-	if (!inTauri) return true;
+	if (!inTauri || isMobile) return true;
 	const { register, unregisterAll } = await import('@tauri-apps/plugin-global-shortcut');
 	await unregisterAll().catch(() => {});
 	if (!settings.data.hotkeys) return true;

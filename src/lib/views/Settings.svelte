@@ -4,6 +4,7 @@
 	import { applyHotkeys, GLOBAL_HOTKEYS } from '$lib/native';
 	import { player } from '$lib/player.svelte';
 	import { ACCENTS, DEFAULT_DISCORD_APP_ID, settings, type Look } from '$lib/settings.svelte';
+	import { isMobile } from '$lib/platform';
 	import { inTauri, invoke } from '$lib/tauri';
 
 	const data = $derived(settings.data);
@@ -142,6 +143,7 @@
 		</div>
 	</section>
 
+	{#if !isMobile}
 	<section>
 		<h2>Discord</h2>
 		<div class="card">
@@ -202,7 +204,9 @@
 			{/if}
 		</div>
 	</section>
+	{/if}
 
+	{#if !isMobile}
 	<section>
 		<h2>Система</h2>
 		<div class="card">
@@ -225,6 +229,7 @@
 			</div>
 		</div>
 	</section>
+	{/if}
 
 	<section>
 		<h2>Внешний вид</h2>
@@ -345,6 +350,7 @@
 				</div>
 			{/if}
 
+			{#if !isMobile}
 			<div class="row">
 				<div class="grow"><div class="strong">Масштаб интерфейса</div></div>
 				<div class="seg">
@@ -353,6 +359,7 @@
 					{/each}
 				</div>
 			</div>
+			{/if}
 			<div class="row">
 				<div class="grow">
 					<div class="strong">Анимации интерфейса</div>
@@ -430,6 +437,7 @@
 		</div>
 	</section>
 
+	{#if !isMobile}
 	<section>
 		<h2>Клавиши</h2>
 		<div class="card keys">
@@ -438,6 +446,7 @@
 			{/each}
 		</div>
 	</section>
+	{/if}
 </div>
 
 <style>

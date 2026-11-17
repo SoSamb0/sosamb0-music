@@ -11,9 +11,11 @@ import {
 	type Monitor,
 	type Window
 } from '@tauri-apps/api/window';
+import { isMobile } from './platform';
 import { inTauri } from './tauri';
 
-const win = (): Window | null => (inTauri ? getCurrentWindow() : null);
+// A phone has no window chrome to manage.
+const win = (): Window | null => (inTauri && !isMobile ? getCurrentWindow() : null);
 
 export const minimize = () => win()?.minimize();
 export const toggleMaximize = () => win()?.toggleMaximize();
@@ -30,7 +32,7 @@ export async function showWindow() {
 
 /** Interface scale (browser-style zoom, so all layout maths stays correct). */
 export async function setZoom(scale: number) {
-	if (!inTauri) return;
+	if (!inTauri || isMobile) return;
 	await getCurrentWebview()
 		.setZoom(scale)
 		.catch(() => {});

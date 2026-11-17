@@ -3,30 +3,42 @@
 Цель — APK SoSamb0 Music для телефона из того же кода (Tauri 2 умеет Android). Звуковой движок и
 весь интерфейс переиспользуются; переписать нужно вывод звука, работу в фоне и раскладку под палец.
 
-## 0. Что нужно установить (делает пользователь)
+## Состояние (17.11.2026)
 
-Уже готово: цели Rust `aarch64-linux-android`, `armv7-linux-androideabi`, `i686-linux-android`,
-`x86_64-linux-android` (поставлены через `rustup`).
+Сделано: шаги 2–4 «Порядка работы» — каркас, вывод AAudio, мобильная раскладка. APK собирается
+(`scripts/android-build.ps1`), на телефоне ещё **не проверялся** — телефон не был подключён.
 
-Нужно поставить:
+Осталось: фоновое воспроизведение и MediaSession (раздел 4), перестановка треков пальцем
+(HTML5 drag-and-drop на сенсорном экране не работает — сейчас на телефоне порядок не меняется),
+проверка на устройстве, релизная подпись.
 
-1. **Android Studio** (последняя) — https://developer.android.com/studio. Принять лицензии при установке.
-2. В Android Studio → *Settings → Languages & Frameworks → Android SDK*:
-   - вкладка *SDK Platforms*: последняя Android (API 35 или новее);
-   - вкладка *SDK Tools*: **Android SDK Build-Tools**, **NDK (Side by side)**, **Android SDK Command-line Tools**,
-     **Android SDK Platform-Tools**.
-3. Переменные окружения Windows (Пуск → «Изменение системных переменных среды» → Переменные среды →
-   для пользователя), затем перезапустить терминал/приложение:
-   - `JAVA_HOME` = `C:\Program Files\Android\Android Studio\jbr`
-   - `ANDROID_HOME` = `%LOCALAPPDATA%\Android\Sdk`
-   - `NDK_HOME` = `%LOCALAPPDATA%\Android\Sdk\ndk\<версия из папки ndk>`
-4. Телефон: *Настройки → О телефоне* — 7 раз нажать «Номер сборки» → *Для разработчиков* → включить
-   «Отладка по USB». Подключить кабелем, разрешить отладку.
+## 0. Инструменты (установлены)
 
-Свободного места на диске ~21 ГБ: Android Studio + SDK + NDK займут ~8–10 ГБ. Эмулятор лучше не ставить —
-собирать сразу на телефон.
+Без Android Studio, только командная строка — в `C:\Users\EpicMonkey\Android`:
+`jdk17` (Temurin 17), `Sdk` (platform-tools, platforms;android-36, build-tools;36.1.0,
+ndk;28.2.13676358, cmdline-tools). Переменные пользователя `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME`
+и `platform-tools` в `Path` заданы. Цели Rust для Android стоят.
 
-Проверка: `java -version` (17+), `adb devices` (телефон в списке), `echo %NDK_HOME%`.
+**Не ставить в `%LOCALAPPDATA%` из Claude**: приложение Claude — пакет MSIX, и Windows тихо
+перенаправляет его записи в `AppData\Local` внутрь `Packages\Claude_…\LocalCache`. Вне Claude этих
+файлов не видно, а Java не может создать там служебный сокет («Unable to establish loopback connection»).
+
+Сборка:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/android-build.ps1            # → SoSamb0-Music-arm64.apk
+powershell -ExecutionPolicy Bypass -File scripts/android-build.ps1 -Install   # и установить по USB (adb)
+```
+
+Скрипт собирает движок в release (отладочный декодер на телефоне может заикаться), а APK — debug-
+вариант, подписанный локальным отладочным ключом. `tauri android build` сам кладёт библиотеку в проект
+символической ссылкой — без «Режима разработчика» Windows это запрещено, скрипт тогда копирует её.
+
+Отступы под статус-бар, вырез и жестовую панель делает `MainActivity.kt` (padding корневого вида), а не
+`env(safe-area-inset-*)` — его поддержка в WebView зависит от версии.
+
+Телефон: *Настройки → О телефоне* — 7 раз «Номер сборки» → *Для разработчиков* → «Отладка по USB».
+Проверка: `adb devices`.
 
 ## 1. Каркас: приложение запускается на телефоне
 
@@ -53,7 +65,18 @@ npm run tauri android dev       # сборка, установка на теле
 
 `ureq` с `rustls` (крипто `ring`) собирается компилятором из NDK — нужен `NDK_HOME`.
 
-## 2. Звук: вывод через AAudio
+## 2. Звук: вывод через AAudio (сделано — `audio/output_android.rs`)
+
+Как сделано (ради качества): поток **float 32** (микшер Android работает во float, 24 бит проходят без
+обрезки и без дизеринга) на **родной частоте устройства** — если частота трека совпадает, пересчёта нет,
+иначе работает наш FFT-ресемплер (rubato, f64), а не ресемплер Android неизвестного качества. Режим
+`PowerSaving`, блокирующая запись в том же цикле, что `output.rs`. Позиция считается по реально
+проигранным кадрам (`frames_written − frames_read`), а не по записанным — иначе тексты убегали бы на
+длину буфера. Пауза ждёт, пока затухание доиграет из буфера устройства. Отключение устройства (наушники,
+Bluetooth) → `failed` → движок открывает поток заново на новом маршруте. Атрибуты usage/content =
+media/music — значения AAudio по умолчанию (явная установка в крейте `ndk` требует API 28).
+
+Исходный план:
 
 Движку всё равно, куда выводить: он общается с выводом через контракт в `audio/backend.rs`
 (`OutCmd::Open/Start/Pause/Flush/Close/ListDevices`, общее состояние `OutShared` с `frames_played`,

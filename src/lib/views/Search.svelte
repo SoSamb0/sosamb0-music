@@ -8,13 +8,18 @@
 
 	let { q }: { q: string } = $props();
 
-	const result = loader(() => app.api!.search(q));
+	// The phone's search tab opens with an empty query: show a hint instead of searching for nothing.
+	const result = loader(() => (q.trim() ? app.api!.search(q) : Promise.resolve(null)));
 	const r = $derived(result.value);
 	const empty = $derived(!!r && !r.songs.length && !r.albums.length && !r.artists.length);
 </script>
 
 <div class="page">
+	{#if !q.trim()}
+		<div class="empty"><Icon name="search" size={30} /><p>Что будем слушать?</p></div>
+	{:else}
 	<h1>«{q}»</h1>
+	{/if}
 	{#if result.loading && !r}
 		<div class="empty"><span class="spinner"></span></div>
 	{:else if empty}

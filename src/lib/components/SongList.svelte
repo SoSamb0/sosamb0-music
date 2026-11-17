@@ -534,4 +534,28 @@
 			display: none;
 		}
 	}
+
+	/* Phone: number, title, length and "⋯". The heart and selection live in the long-press menu. */
+	@container main (max-width: 480px) {
+		.with-album .row,
+		.row {
+			grid-template-columns: 28px minmax(0, 1fr) 40px 34px;
+			gap: 6px;
+			height: 58px;
+			padding: 0 0 0 2px;
+		}
+
+		.row > .check,
+		.row > .heart {
+			display: none;
+		}
+
+		.selecting .row > .check {
+			display: grid;
+		}
+
+		.selecting .row {
+			grid-template-columns: 28px 28px minmax(0, 1fr) 40px 34px;
+		}
+	}
 </style>

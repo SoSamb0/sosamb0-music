@@ -46,6 +46,7 @@ impl OutShared {
     }
 }
 
+#[cfg_attr(target_os = "android", allow(dead_code))]
 pub enum OutCmd {
     /// Open a device. `rate` is the wanted rate in exclusive mode; shared mode uses the
     /// system mixer rate. Any previously open device is released first.
