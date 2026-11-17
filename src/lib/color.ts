@@ -1,6 +1,7 @@
 // Derive an accent colour from album art so the interface takes on the mood of the music.
 
-export const DEFAULT_ACCENT: [number, number, number] = [139, 124, 246];
+// The blue of the SoSamb0 Music logo.
+export const DEFAULT_ACCENT: [number, number, number] = [90, 169, 255];
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
 	r /= 255;

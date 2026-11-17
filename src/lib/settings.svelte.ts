@@ -67,7 +67,7 @@ export interface Look {
  */
 export const DEFAULT_DISCORD_APP_ID = '1571966119789465711';
 
-export const ACCENTS = ['#8b7cf6', '#5aa9ff', '#2dd4bf', '#4ade80', '#fbbf24', '#fb923c', '#fb7185', '#e879f9', '#e5e7eb'];
+export const ACCENTS = ['#5aa9ff', '#8b7cf6', '#2dd4bf', '#4ade80', '#fbbf24', '#fb923c', '#fb7185', '#e879f9', '#e5e7eb'];
 
 interface Persisted {
 	server: ServerConfig | null;
