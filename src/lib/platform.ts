@@ -1,4 +1,11 @@
-// Which kind of device the interface runs on. The Android build and the browser preview with a
-// phone user agent both get the touch layout.
+// Which kind of device the interface runs on. The Android app says so itself (an init script from
+// Rust, see lib.rs); the browser preview with a phone user agent gets the touch layout too.
 
-export const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+declare global {
+	interface Window {
+		__LUMEN_MOBILE__?: boolean;
+	}
+}
+
+export const isMobile =
+	typeof window !== 'undefined' && (window.__LUMEN_MOBILE__ === true || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));

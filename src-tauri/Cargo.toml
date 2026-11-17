@@ -40,7 +40,9 @@ tauri-plugin-global-shortcut = "2.4.1"
 tauri-plugin-single-instance = "2.5.5"
 
 [target.'cfg(target_os = "android")'.dependencies]
-ndk = { version = "0.9", features = ["audio", "api-level-26"] }
+# Raw AAudio bindings. (The `ndk` 0.9 wrapper treats a successful AAudioStream_write, which
+# returns the frame count, as an error.)
+ndk-sys = { version = "0.6", features = ["audio"] }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

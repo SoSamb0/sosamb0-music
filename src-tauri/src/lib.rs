@@ -158,6 +158,14 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_global_shortcut::Builder::new().build());
+    // Tell the interface it runs on a phone before any of its code loads (the user agent is not
+    // a reliable signal inside the app's WebView).
+    #[cfg(mobile)]
+    let builder = builder.plugin(
+        tauri::plugin::Builder::<tauri::Wry>::new("lumen-platform")
+            .js_init_script("window.__LUMEN_MOBILE__ = true;")
+            .build(),
+    );
     builder
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {

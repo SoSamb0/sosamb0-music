@@ -16,16 +16,11 @@
 //! The thread mirrors `output.rs`: blocking writes from the ring, the same fades for pause and
 //! flush, and the same `OutShared` reporting.
 
-use std::ffi::c_void;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, TryRecvError};
-use ndk::audio::{
-    AudioDirection, AudioError, AudioFormat, AudioPerformanceMode, AudioSharingMode,
-    AudioStream, AudioStreamBuilder,
-};
 use rtrb::Consumer;
 
 use super::backend::{OutCmd, OutShared, CHANNELS};
@@ -39,13 +34,121 @@ const DRAIN_LIMIT: Duration = Duration::from_millis(600);
 /// Device name shown in the signal path window.
 const DEVICE_NAME: &str = "Android";
 
+/// Minimal safe wrapper over the AAudio C API (only what this backend needs).
+mod aaudio {
+    use std::ffi::{c_void, CStr};
+    use std::ptr;
+
+    use ndk_sys as ffi;
+
+    /// An AAudio error code.
+    #[derive(Debug, Clone, Copy)]
+    pub struct Error(pub i32);
+
+    impl Error {
+        pub const TIMEOUT: Error = Error(ffi::AAUDIO_ERROR_TIMEOUT);
+
+        pub fn text(self) -> String {
+            let text = unsafe { ffi::AAudio_convertResultToText(self.0) };
+            if text.is_null() {
+                return format!("AAudio error {}", self.0);
+            }
+            unsafe { CStr::from_ptr(text) }.to_string_lossy().into_owned()
+        }
+    }
+
+    fn check(result: i32) -> Result<i32, Error> {
+        if result < 0 { Err(Error(result)) } else { Ok(result) }
+    }
+
+    pub struct Stream(*mut ffi::AAudioStream);
+
+    // The stream is only ever used from the output thread that opened it.
+    unsafe impl Send for Stream {}
+
+    impl Stream {
+        /// Shared-mode float output at the device's own rate, on the power-saving path.
+        pub fn open_output(channels: i32) -> Result<Stream, Error> {
+            unsafe {
+                let mut builder = ptr::null_mut();
+                check(ffi::AAudio_createStreamBuilder(&mut builder))?;
+                ffi::AAudioStreamBuilder_setDirection(builder, ffi::AAUDIO_DIRECTION_OUTPUT as i32);
+                ffi::AAudioStreamBuilder_setFormat(builder, ffi::AAUDIO_FORMAT_PCM_FLOAT as i32);
+                ffi::AAudioStreamBuilder_setChannelCount(builder, channels);
+                ffi::AAudioStreamBuilder_setSharingMode(builder, ffi::AAUDIO_SHARING_MODE_SHARED as i32);
+                ffi::AAudioStreamBuilder_setPerformanceMode(builder, ffi::AAUDIO_PERFORMANCE_MODE_POWER_SAVING as i32);
+                let mut stream = ptr::null_mut();
+                let result = ffi::AAudioStreamBuilder_openStream(builder, &mut stream);
+                ffi::AAudioStreamBuilder_delete(builder);
+                check(result)?;
+                Ok(Stream(stream))
+            }
+        }
+
+        pub fn is_float(&self) -> bool {
+            unsafe { ffi::AAudioStream_getFormat(self.0) == ffi::AAUDIO_FORMAT_PCM_FLOAT as i32 }
+        }
+
+        pub fn channel_count(&self) -> i32 {
+            unsafe { ffi::AAudioStream_getChannelCount(self.0) }
+        }
+
+        pub fn sample_rate(&self) -> i32 {
+            unsafe { ffi::AAudioStream_getSampleRate(self.0) }
+        }
+
+        pub fn frames_per_burst(&self) -> i32 {
+            unsafe { ffi::AAudioStream_getFramesPerBurst(self.0) }
+        }
+
+        pub fn frames_written(&self) -> i64 {
+            unsafe { ffi::AAudioStream_getFramesWritten(self.0) }
+        }
+
+        pub fn frames_read(&self) -> i64 {
+            unsafe { ffi::AAudioStream_getFramesRead(self.0) }
+        }
+
+        pub fn start(&self) -> Result<(), Error> {
+            check(unsafe { ffi::AAudioStream_requestStart(self.0) }).map(drop)
+        }
+
+        pub fn pause(&self) -> Result<(), Error> {
+            check(unsafe { ffi::AAudioStream_requestPause(self.0) }).map(drop)
+        }
+
+        pub fn flush(&self) -> Result<(), Error> {
+            check(unsafe { ffi::AAudioStream_requestFlush(self.0) }).map(drop)
+        }
+
+        /// Write interleaved f32 frames, blocking up to `timeout_ns`. Returns the frames written.
+        pub fn write(&self, samples: &[f32], channels: usize, timeout_ns: i64) -> Result<usize, Error> {
+            let frames = (samples.len() / channels) as i32;
+            let n = check(unsafe {
+                ffi::AAudioStream_write(self.0, samples.as_ptr() as *const c_void, frames, timeout_ns)
+            })?;
+            Ok(n as usize)
+        }
+    }
+
+    impl Drop for Stream {
+        fn drop(&mut self) {
+            unsafe { ffi::AAudioStream_close(self.0) };
+        }
+    }
+}
+
+use aaudio::Error as AudioError;
+
 struct Stream {
-    stream: AudioStream,
+    stream: aaudio::Stream,
     rate: u32,
     /// Frames handed to `write` per call: a couple of bursts.
     chunk: usize,
     samples: Vec<f64>,
     bytes: Vec<u8>,
+    /// `bytes` as the f32 samples the device takes.
+    out: Vec<f32>,
 }
 
 impl Stream {
@@ -118,7 +221,7 @@ impl Output {
             }
             if self.running {
                 if let Err(e) = self.render() {
-                    eprintln!("lumen: output device failed: {}", e.to_text());
+                    eprintln!("lumen: output device failed: {}", e.text());
                     self.stop_stream();
                     self.stream = None;
                     self.settle_pending();
@@ -144,7 +247,7 @@ impl Output {
             }
             OutCmd::Start => {
                 if let (Some(s), false) = (&self.stream, self.running) {
-                    if s.stream.request_start().is_ok() {
+                    if s.stream.start().is_ok() {
                         self.running = true;
                     } else {
                         self.shared.failed.store(true, Ordering::Release);
@@ -190,7 +293,7 @@ impl Output {
 
     fn stop_stream(&mut self) {
         if let (Some(s), true) = (&self.stream, self.running) {
-            let _ = s.stream.request_pause();
+            let _ = s.stream.pause();
         }
         self.running = false;
     }
@@ -204,7 +307,7 @@ impl Output {
         // A paused stream can drop its buffer too (only silence from the fade is left in it),
         // so the next sound starts immediately and the play counter stays exact.
         if let (Some(s), false) = (&self.stream, self.running) {
-            let _ = s.stream.request_flush();
+            let _ = s.stream.flush();
         }
         self.written = 0;
         self.shared.frames_played.store(0, Ordering::Release);
@@ -264,19 +367,14 @@ impl Output {
             // Float output is never dithered; `convert` skips the ramp at unity gain.
             convert(&s.samples, &mut s.bytes, SampleFmt::F32, CHANNELS, &mut self.gain, None);
 
+            s.out.clear();
+            s.out.extend(s.bytes.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])));
             let mut done = 0;
             while done < frames {
-                let offset = done * CHANNELS * SampleFmt::F32.bytes();
                 // Blocks until there is room; the timeout only guards against a stuck device.
-                let n = unsafe {
-                    s.stream.write(
-                        s.bytes[offset..].as_ptr() as *const c_void,
-                        (frames - done) as i32,
-                        1_000_000_000,
-                    )
-                }? as usize;
+                let n = s.stream.write(&s.out[done * CHANNELS..], CHANNELS, 1_000_000_000)?;
                 if n == 0 {
-                    return Err(AudioError::Timeout);
+                    return Err(AudioError::TIMEOUT);
                 }
                 done += n;
             }
@@ -313,22 +411,9 @@ impl Output {
 }
 
 fn open() -> Result<(Stream, DeviceFormat), String> {
-    let err = |e: AudioError| format!("AAudio: {}", e.to_text());
-    let stream = AudioStreamBuilder::new()
-        .map_err(err)?
-        .direction(AudioDirection::Output)
-        .format(AudioFormat::PCM_Float)
-        .channel_count(CHANNELS as i32)
-        .sharing_mode(AudioSharingMode::Shared)
-        .performance_mode(AudioPerformanceMode::PowerSaving)
-        .open_stream()
-        .map_err(err)?;
-    if stream.format() != AudioFormat::PCM_Float || stream.channel_count() != CHANNELS as i32 {
-        return Err(format!(
-            "AAudio opened {:?} with {} channels instead of float stereo",
-            stream.format(),
-            stream.channel_count()
-        ));
+    let stream = aaudio::Stream::open_output(CHANNELS as i32).map_err(|e| format!("AAudio: {}", e.text()))?;
+    if !stream.is_float() || stream.channel_count() != CHANNELS as i32 {
+        return Err(format!("AAudio opened {} channels, float: {}", stream.channel_count(), stream.is_float()));
     }
     let rate = stream.sample_rate() as u32;
     let burst = stream.frames_per_burst().max(64) as usize;
@@ -341,6 +426,6 @@ fn open() -> Result<(Stream, DeviceFormat), String> {
         exclusive: false,
         note: None,
     };
-    let stream = Stream { stream, rate, chunk: burst * 2, samples: Vec::new(), bytes: Vec::new() };
+    let stream = Stream { stream, rate, chunk: burst * 2, samples: Vec::new(), bytes: Vec::new(), out: Vec::new() };
     Ok((stream, format))
 }
