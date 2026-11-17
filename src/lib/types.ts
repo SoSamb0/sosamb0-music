@@ -103,6 +103,10 @@ export interface MusicApi {
 	removeFromPlaylist(id: string, indexes: number | number[]): Promise<void>;
 	deletePlaylist(id: string): Promise<void>;
 	renamePlaylist(id: string, name: string): Promise<void>;
+	/** Replace the playlist's track order. `oldLength` is the current number of entries. */
+	reorderPlaylist(id: string, songIds: string[], oldLength: number): Promise<void>;
+	/** All tracks of the library, or those matching `query`, a page at a time. */
+	songs(query: string, count: number, offset: number): Promise<Song[]>;
 	starred(): Promise<{ songs: Song[]; albums: Album[]; artists: Artist[] }>;
 	star(kind: 'song' | 'album' | 'artist', id: string, on: boolean): Promise<void>;
 	search(query: string): Promise<{ songs: Song[]; albums: Album[]; artists: Artist[] }>;

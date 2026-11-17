@@ -165,6 +165,18 @@ export class DemoApi implements MusicApi {
 		return delay(undefined);
 	}
 
+	reorderPlaylist(id: string, songIds: string[]) {
+		const p = playlists.find((x) => x.id === id);
+		if (p) p.entry = songIds.map((s) => songs.get(s)!);
+		return delay(undefined);
+	}
+
+	songs(query: string, count: number, offset: number) {
+		const q = query.trim().toLowerCase();
+		const all = [...songs.values()].filter((s) => !q || s.title.toLowerCase().includes(q) || (s.artist ?? '').toLowerCase().includes(q));
+		return delay(all.slice(offset, offset + count));
+	}
+
 	renamePlaylist(id: string, name: string) {
 		const p = playlists.find((x) => x.id === id);
 		if (p) p.name = name;

@@ -49,6 +49,7 @@
 		refresh: '<path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/>',
 		checkbox: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/>',
 		checked: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12 3 3 5-6"/>',
+		note: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
 		wave: '<path d="M2 12h2"/><path d="M7 7v10"/><path d="M12 3v18"/><path d="M17 8v8"/><path d="M22 12h-2"/>'
 	};
 </script>

@@ -28,6 +28,7 @@
 	import PlaylistView from '$lib/views/PlaylistView.svelte';
 	import Search from '$lib/views/Search.svelte';
 	import Settings from '$lib/views/Settings.svelte';
+	import Songs from '$lib/views/Songs.svelte';
 	import Stats from '$lib/views/Stats.svelte';
 
 	let titlebar = $state<ReturnType<typeof Titlebar>>();
@@ -149,6 +150,7 @@
 					{#key JSON.stringify(route)}
 						{#if route.name === 'home'}<Home />
 						{:else if route.name === 'albums'}<Albums />
+						{:else if route.name === 'songs'}<Songs />
 						{:else if route.name === 'album'}<AlbumView id={route.id} />
 						{:else if route.name === 'artists'}<Artists />
 						{:else if route.name === 'artist'}<ArtistView id={route.id} />

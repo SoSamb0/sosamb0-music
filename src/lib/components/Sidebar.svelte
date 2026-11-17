@@ -7,6 +7,7 @@
 	const NAV: { route: Route; label: string; icon: string; match: string[] }[] = [
 		{ route: { name: 'home' }, label: 'Главная', icon: 'home', match: ['home'] },
 		{ route: { name: 'albums' }, label: 'Альбомы', icon: 'album', match: ['albums', 'album'] },
+		{ route: { name: 'songs' }, label: 'Треки', icon: 'note', match: ['songs'] },
 		{ route: { name: 'artists' }, label: 'Исполнители', icon: 'artist', match: ['artists', 'artist'] },
 		{ route: { name: 'genres' }, label: 'Жанры', icon: 'genre', match: ['genres', 'genre'] },
 		{ route: { name: 'favorites' }, label: 'Избранное', icon: 'heart', match: ['favorites'] },
@@ -46,6 +47,7 @@
 				icon: 'trash',
 				danger: true,
 				action: async () => {
+					if (!(await app.confirm(`Удалить плейлист «${name}»?`))) return;
 					const ok = await app.attempt(async () => {
 						await app.api!.deletePlaylist(id);
 						return true;

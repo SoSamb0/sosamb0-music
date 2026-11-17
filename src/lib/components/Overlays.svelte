@@ -12,6 +12,8 @@
 	});
 </script>
 
+<svelte:window onkeydown={(e) => app.question?.confirm && e.key === 'Escape' && app.answer(null)} />
+
 <div class="toasts" aria-live="polite">
 	{#each app.toasts as toast (toast.id)}
 		<div class="toast" class:error={toast.kind === 'error'} role={toast.kind === 'error' ? 'alert' : 'status'}>{toast.text}</div>
@@ -24,23 +26,29 @@
 		class="dialog"
 		onsubmit={(e) => {
 			e.preventDefault();
-			app.answer(value);
+			app.answer(app.question?.confirm ? 'yes' : value);
 		}}
 	>
 		<h2>{app.question.title}</h2>
-		<input
-			class="field"
-			bind:this={input}
-			bind:value
-			onkeydown={(e) => {
-				e.stopPropagation();
-				if (e.key === 'Escape') app.answer(null);
-			}}
-			aria-label={app.question.title}
-		/>
+		{#if !app.question.confirm}
+			<input
+				class="field"
+				bind:this={input}
+				bind:value
+				onkeydown={(e) => {
+					e.stopPropagation();
+					if (e.key === 'Escape') app.answer(null);
+				}}
+				aria-label={app.question.title}
+			/>
+		{/if}
 		<div class="actions">
 			<button class="btn" type="button" onclick={() => app.answer(null)}>Отмена</button>
-			<button class="btn primary" type="submit" disabled={!value.trim()}>Готово</button>
+			{#if app.question.confirm}
+				<button class="btn primary danger" type="submit">{app.question.confirm}</button>
+			{:else}
+				<button class="btn primary" type="submit" disabled={!value.trim()}>Готово</button>
+			{/if}
 		</div>
 	</form>
 {/if}
@@ -106,6 +114,10 @@
 		border: 1px solid var(--line);
 		box-shadow: 0 30px 80px rgb(0 0 0 / 0.6);
 		transform: translateX(-50%);
+	}
+
+	.btn.danger {
+		background: var(--danger);
 	}
 
 	.actions {

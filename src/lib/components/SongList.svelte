@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { SvelteSet } from 'svelte/reactivity';
 	import { app, formatTime } from '$lib/app.svelte';
+	import { drag, endDrag, reorder, startDrag, trackLabel } from '$lib/dnd.svelte';
 	import { menu, playlistItems, songMenu, songsMenu, type MenuItem } from '$lib/menu.svelte';
 	import { isLossless, player } from '$lib/player.svelte';
 	import type { Song } from '$lib/types';
@@ -14,7 +15,8 @@
 		showAlbum = true,
 		showArtist = true,
 		extraMenu,
-		onremove
+		onremove,
+		onreorder
 	}: {
 		songs: Song[];
 		numbering?: 'index' | 'track';
@@ -24,7 +26,50 @@
 		extraMenu?: (song: Song, index: number) => MenuItem[];
 		/** When set, selected rows can be removed (positions in `songs`). */
 		onremove?: (indexes: number[]) => void;
+		/** When set, rows can be dragged into a new order; receives the old indexes in the new order. */
+		onreorder?: (order: number[]) => void;
 	} = $props();
+
+	// Drag and drop: rows can be dragged to a playlist, the queue, or (with onreorder) within the list.
+	const source = Symbol('song-list');
+	let dropAt = $state<number | null>(null);
+
+	function dragStart(e: DragEvent, i: number) {
+		if (!onreorder) return;
+		if (!selected.has(i)) {
+			selected.clear();
+			selected.add(i);
+			anchor = i;
+			multi = false;
+		}
+		const indexes = [...selected].sort((a, b) => a - b);
+		const tracks = indexes.map((k) => songs[k]);
+		startDrag(e, { label: tracks.length === 1 ? tracks[0].title : trackLabel(tracks.length), load: () => tracks, source, indexes });
+	}
+
+	function dragOver(e: DragEvent, i: number) {
+		if (!onreorder || drag.payload?.source !== source) return;
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+		const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		dropAt = e.clientY < r.top + r.height / 2 ? i : i + 1;
+	}
+
+	function dropOnList(e: DragEvent) {
+		const moving = drag.payload?.indexes;
+		if (dropAt === null || !moving || drag.payload?.source !== source) return;
+		e.preventDefault();
+		const order = reorder(songs.length, moving, dropAt);
+		dropAt = null;
+		endDrag();
+		selected.clear();
+		if (order.some((v, k) => v !== k)) onreorder?.(order);
+	}
+
+	function dragEnd() {
+		dropAt = null;
+		endDrag();
+	}
 
 	const currentId = $derived(player.current?.id);
 
@@ -37,11 +82,17 @@
 	const picked = $derived([...selected].sort((a, b) => a - b).map((i) => songs[i]).filter(Boolean));
 
 	// A new list (another album, a refreshed playlist) starts with nothing selected.
+	const listKey = $derived(songs[0]?.id ?? '');
 	$effect(() => {
-		songs;
+		listKey;
 		selected.clear();
 		anchor = null;
 		multi = false;
+	});
+	// Rows removed underneath the selection.
+	$effect(() => {
+		const n = songs.length;
+		for (const i of [...selected]) if (i >= n) selected.delete(i);
 	});
 
 	function quality(song: Song): string | null {
@@ -98,6 +149,12 @@
 		onremove?.(indexes);
 	}
 
+	/** Select every track of the list (also exported for "select all" buttons on pages). */
+	export function selectAll() {
+		songs.forEach((_, i) => selected.add(i));
+		multi = true;
+	}
+
 	function run(action: () => void) {
 		action();
 		selected.clear();
@@ -109,8 +166,7 @@
 			selected.clear();
 			e.stopPropagation();
 		} else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-			songs.forEach((_, i) => selected.add(i));
-			multi = true;
+			selectAll();
 			e.preventDefault();
 		} else if (e.key === 'Delete' && onremove) {
 			removeSelected();
@@ -130,7 +186,14 @@
 			class="row"
 			class:active
 			class:selected={selected.has(i)}
+			class:drop-before={dropAt === i}
+			class:drop-after={dropAt === songs.length && i === songs.length - 1}
 			role="listitem"
+			draggable={onreorder ? 'true' : undefined}
+			ondragstart={(e) => dragStart(e, i)}
+			ondragover={(e) => dragOver(e, i)}
+			ondrop={dropOnList}
+			ondragend={dragEnd}
 			onclick={(e) => rowClick(e, i)}
 			ondblclick={(e) => !(e.target as HTMLElement).closest('button') && player.play(songs, i)}
 			oncontextmenu={(e) => openMenu(e, song, i)}
@@ -186,6 +249,9 @@
 	{#if showBar}
 		<div class="bar" role="toolbar" aria-label="Действия с выбранными треками">
 			<span class="count">Выбрано: {selected.size}</span>
+			{#if selected.size < songs.length}
+				<button class="btn small" onclick={selectAll} title="Ctrl+A">Выбрать все ({songs.length})</button>
+			{/if}
 			<button class="btn small primary" onclick={() => run(() => player.play(picked))}><Icon name="play" size={14} />Играть</button>
 			<button class="btn small" onclick={() => run(() => player.playNext(picked))}>Следующими</button>
 			<button class="btn small" onclick={() => run(() => player.enqueue(picked))}>В очередь</button>
@@ -225,6 +291,31 @@
 
 	.row:hover {
 		background: var(--surface);
+	}
+
+	.row {
+		position: relative;
+	}
+
+	/* Where dragged rows will land. */
+	.row.drop-before::before,
+	.row.drop-after::after {
+		content: '';
+		position: absolute;
+		left: 8px;
+		right: 8px;
+		height: 2px;
+		border-radius: 2px;
+		background: var(--accent);
+		box-shadow: 0 0 8px var(--accent);
+	}
+
+	.row.drop-before::before {
+		top: -1px;
+	}
+
+	.row.drop-after::after {
+		bottom: -1px;
 	}
 
 	.row.active {

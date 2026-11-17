@@ -135,6 +135,28 @@ export class Subsonic implements MusicApi {
 		await this.call('updatePlaylist', { playlistId: id, songIndexToRemove: indexes });
 	}
 
+	async reorderPlaylist(id: string, songIds: string[], oldLength: number) {
+		// Subsonic has no "move": remove every entry and add them back in the new order. The
+		// server applies both in one request, so the playlist is never left half-written.
+		await this.call('updatePlaylist', {
+			playlistId: id,
+			songIndexToRemove: [...Array(oldLength).keys()],
+			songIdToAdd: songIds
+		});
+	}
+
+	async songs(query: string, count: number, offset: number): Promise<Song[]> {
+		// An empty query ("") makes Navidrome return the whole library.
+		const body = await this.call('search3', {
+			query: query.trim() || '""',
+			songCount: count,
+			songOffset: offset,
+			albumCount: 0,
+			artistCount: 0
+		});
+		return list(body.searchResult3?.song);
+	}
+
 	async renamePlaylist(id: string, name: string) {
 		await this.call('updatePlaylist', { playlistId: id, name });
 	}

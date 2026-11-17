@@ -15,6 +15,27 @@
 	});
 	const songs = $derived(playlist.value?.entry ?? []);
 
+	/** Show the new order at once, then save it; on failure the reload puts the old order back. */
+	let pending = $state<typeof songs | null>(null);
+	const shown = $derived(pending ?? songs);
+
+	async function move(order: number[]) {
+		const before = songs;
+		pending = order.map((i) => before[i]);
+		const ok = await app.attempt(async () => {
+			await app.api!.reorderPlaylist(id, pending!.map((s) => s.id), before.length);
+			return true;
+		}, 'Не удалось сохранить порядок треков');
+		if (ok) app.refreshPlaylists();
+		else playlist.reload();
+	}
+
+	// Clear the optimistic order once the server's copy arrives.
+	$effect(() => {
+		songs;
+		pending = null;
+	});
+
 	async function remove(indexes: number | number[]) {
 		const count = [indexes].flat().length;
 		const ok = await app.attempt(async () => {
@@ -37,15 +58,16 @@
 				{#if songs.length}<span>·</span><span>{formatDuration(songs.reduce((t, s) => t + (s.duration ?? 0), 0))}</span>{/if}
 			{/snippet}
 			{#snippet actions()}
-				<button class="btn primary" onclick={() => player.play(songs)} disabled={!songs.length}><Icon name="play" size={16} />Слушать</button>
-				<button class="btn" onclick={() => player.play(songs, 0, true)} disabled={!songs.length}><Icon name="shuffle" size={16} />Перемешать</button>
+				<button class="btn primary" onclick={() => player.play(shown)} disabled={!songs.length}><Icon name="play" size={16} />Слушать</button>
+				<button class="btn" onclick={() => player.play(shown, 0, true)} disabled={!songs.length}><Icon name="shuffle" size={16} />Перемешать</button>
 			{/snippet}
 		</Hero>
 		{#if songs.length}
 			<SongList
-				{songs}
+				songs={shown}
 				extraMenu={(_, i) => [{ label: '', separator: true }, { label: 'Убрать из плейлиста', icon: 'trash', danger: true, action: () => remove(i) }]}
 				onremove={(indexes) => remove(indexes)}
+				onreorder={(order) => move(order)}
 			/>
 		{:else}
 			<div class="empty"><p>В плейлисте пока пусто. Добавляйте треки через меню «⋯».</p></div>

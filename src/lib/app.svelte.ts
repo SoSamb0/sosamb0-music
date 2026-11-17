@@ -7,6 +7,7 @@ import type { MusicApi, Playlist } from './types';
 export type Route =
 	| { name: 'home' }
 	| { name: 'albums' }
+	| { name: 'songs' }
 	| { name: 'album'; id: string }
 	| { name: 'artists' }
 	| { name: 'artist'; id: string }
@@ -44,12 +45,18 @@ class App {
 	/** Bumped whenever playlist contents may have changed, so open playlist views reload. */
 	playlistRevision = $state(0);
 	/** A pending text question shown as a dialog (window.prompt is unreliable in webviews). */
-	question = $state<{ title: string; value: string; resolve: (answer: string | null) => void } | null>(null);
+	question = $state<{ title: string; value: string; confirm?: string; resolve: (answer: string | null) => void } | null>(null);
 	private toastId = 0;
 
 	ask(title: string, value = ''): Promise<string | null> {
 		this.question?.resolve(null);
 		return new Promise((resolve) => (this.question = { title, value, resolve }));
+	}
+
+	/** Ask for confirmation. Resolves true when the user agrees. */
+	confirm(title: string, confirm = 'Удалить'): Promise<boolean> {
+		this.question?.resolve(null);
+		return new Promise((resolve) => (this.question = { title, value: '', confirm, resolve: (a) => resolve(a !== null) }));
 	}
 
 	answer(value: string | null) {
