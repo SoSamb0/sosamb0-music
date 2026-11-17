@@ -4,7 +4,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import SongList from '$lib/components/SongList.svelte';
 	import { loader } from '$lib/loader.svelte';
-	import { albumMenu, menu } from '$lib/menu.svelte';
+	import { albumHeader, albumMenu, menu } from '$lib/menu.svelte';
 	import { formatQuality, player } from '$lib/player.svelte';
 	import type { Song } from '$lib/types';
 
@@ -57,7 +57,7 @@
 				<button class="icon-btn" class:on={starred} onclick={toggleStar} aria-label={starred ? 'Убрать из избранного' : 'В избранное'}>
 					<Icon name={starred ? 'heartFill' : 'heart'} />
 				</button>
-				<button class="icon-btn" onclick={(e) => menu.open(e, albumMenu(a))} aria-label="Ещё"><Icon name="more" /></button>
+				<button class="icon-btn" onclick={(e) => menu.open(e, albumMenu(a), albumHeader(a))} aria-label="Ещё"><Icon name="more" /></button>
 			{/snippet}
 		</Hero>
 

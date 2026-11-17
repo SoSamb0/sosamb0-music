@@ -43,6 +43,8 @@ tauri-plugin-single-instance = "2.5.5"
 # Raw AAudio bindings. (The `ndk` 0.9 wrapper treats a successful AAudioStream_write, which
 # returns the frame count, as an error.)
 ndk-sys = { version = "0.6", features = ["audio"] }
+# Bridge to the Kotlin media session (MediaBridge.kt). Same version Tauri uses.
+jni = "0.21"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

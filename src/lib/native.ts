@@ -3,6 +3,7 @@
 import { player } from './player.svelte';
 import { settings } from './settings.svelte';
 import { app } from './app.svelte';
+import { menu } from './menu.svelte';
 import { isMobile } from './platform';
 import { inTauri, listen } from './tauri';
 import { closeWindow, showWindow } from './window';
@@ -60,7 +61,8 @@ export async function initNative() {
 async function initBackButton() {
 	const { onBackButtonPress, exit } = await import('@tauri-apps/api/app');
 	await onBackButtonPress(() => {
-		if (!app.closeTop()) exit(0).catch(() => {});
+		if (menu.visible) menu.close();
+		else if (!app.closeTop()) exit(0).catch(() => {});
 	});
 }
 

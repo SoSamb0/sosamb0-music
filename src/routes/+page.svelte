@@ -14,6 +14,7 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import SoundPanel from '$lib/components/SoundPanel.svelte';
 	import Titlebar from '$lib/components/Titlebar.svelte';
+	import MenuSheet from '$lib/components/mobile/MenuSheet.svelte';
 	import MobileHeader from '$lib/components/mobile/MobileHeader.svelte';
 	import MobileNav from '$lib/components/mobile/MobileNav.svelte';
 	import MobilePlayer from '$lib/components/mobile/MobilePlayer.svelte';
@@ -208,7 +209,7 @@
 	{#if app.soundOpen}<SoundPanel />{/if}
 {/if}
 
-<ContextMenu />
+{#if isMobile}<MenuSheet />{:else}<ContextMenu />{/if}
 <Overlays />
 
 <style>

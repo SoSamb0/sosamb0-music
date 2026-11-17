@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { app } from '$lib/app.svelte';
-	import { menu, songMenu } from '$lib/menu.svelte';
+	import { menu, songHeader, songMenu } from '$lib/menu.svelte';
 	import { formatQuality, player } from '$lib/player.svelte';
 	import { settings } from '$lib/settings.svelte';
 	import Disc from '../Disc.svelte';
@@ -91,7 +91,7 @@
 		<span class="head muted">
 			{#if view === 'lyrics'}Текст{:else if view === 'queue'}Очередь{:else}Сейчас играет{/if}
 		</span>
-		<button class="icon-btn" onclick={(e) => song && menu.open(e, songMenu(song))} disabled={!song} aria-label="Ещё"><Icon name="more" size={22} /></button>
+		<button class="icon-btn" onclick={(e) => song && menu.open(e, songMenu(song), songHeader(song))} disabled={!song} aria-label="Ещё"><Icon name="more" size={22} /></button>
 	</header>
 
 	<div class="middle">

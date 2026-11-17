@@ -457,49 +457,6 @@ html[data-mobile] .grid {
 	gap: 14px;
 }
 
-/* Context menus become a sheet at the bottom of the screen. */
-html[data-mobile] .menu:not(.submenu) {
-	left: 0 !important;
-	right: 0;
-	top: auto !important;
-	bottom: 0;
-	max-width: none;
-	max-height: 75dvh;
-	overflow-y: auto;
-	padding: 10px 10px calc(env(safe-area-inset-bottom) + 10px);
-	border-radius: 18px 18px 0 0;
-	animation: sheet-up 0.22s var(--ease);
-}
-
-html[data-mobile] .menu .item {
-	height: 48px;
-	font-size: 15.5px;
-}
-
-/* Submenus open inline, below their item. */
-html[data-mobile] .menu.submenu {
-	position: static;
-	max-height: none;
-	margin: 2px 0 6px 28px;
-	padding: 0;
-	border: 0;
-	box-shadow: none;
-	background: none;
-	backdrop-filter: none;
-	translate: none !important;
-}
-
-html[data-mobile] .veil {
-	background: rgb(0 0 0 / 0.45);
-}
-
-@keyframes sheet-up {
-	from {
-		transform: translateY(40%);
-		opacity: 0;
-	}
-}
-
 /* The sound window takes the whole screen. */
 html[data-mobile] .drawer {
 	inset: 0 !important;

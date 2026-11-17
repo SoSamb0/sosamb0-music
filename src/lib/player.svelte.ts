@@ -137,6 +137,9 @@ class Player {
 				if (i < 0) break;
 				this.index = i;
 				this.failures = 0;
+				// A gapless change starts at zero; the next status confirms it.
+				this.position = 0;
+				this.positionAt = performance.now();
 				this.onTrackChange();
 				break;
 			}
@@ -421,7 +424,8 @@ class Player {
 		this.position = target;
 		this.positionAt = performance.now();
 		invoke('player_seek', { position: target });
-		this.notifyDiscord();
+		// Also moves the lock-screen progress bar (and updates Discord).
+		this.notifyMedia();
 	}
 
 	setVolume(volume: number) {

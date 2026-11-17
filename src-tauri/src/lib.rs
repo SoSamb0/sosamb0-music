@@ -3,15 +3,10 @@ mod discord;
 #[cfg(desktop)]
 mod media;
 
-/// Phones get lock-screen controls through Android's MediaSession (see docs/ANDROID.md, part 4);
-/// until then the UI's updates are accepted and ignored.
-#[cfg(mobile)]
-mod media {
-    #[tauri::command]
-    pub fn media_update(info: serde_json::Value) {
-        let _ = info;
-    }
-}
+#[cfg(target_os = "android")]
+mod android_media;
+#[cfg(target_os = "android")]
+use android_media as media;
 
 use std::path::PathBuf;
 
@@ -169,6 +164,8 @@ pub fn run() {
     builder
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            #[cfg(target_os = "android")]
+            android_media::init(app.handle());
             let cache_dir = app.path().app_cache_dir()?.join("stream");
             let handle = app.handle().clone();
             let engine = Engine::spawn(cache_dir.clone(), move |event| {

@@ -11,16 +11,27 @@ export interface MenuItem {
 	separator?: boolean;
 }
 
+/** What a menu is about, shown on top of the phone's menu sheet. */
+export interface MenuHeader {
+	title: string;
+	subtitle?: string;
+	/** Cover art id. */
+	cover?: string;
+	round?: boolean;
+}
+
 class Menu {
 	items = $state<MenuItem[]>([]);
+	header = $state<MenuHeader | null>(null);
 	x = $state(0);
 	y = $state(0);
 	visible = $state(false);
 
-	open(event: MouseEvent, items: MenuItem[]) {
+	open(event: MouseEvent, items: MenuItem[], header: MenuHeader | null = null) {
 		event.preventDefault();
 		event.stopPropagation();
 		this.items = items;
+		this.header = header;
 		this.x = event.clientX;
 		this.y = event.clientY;
 		this.visible = true;
@@ -69,6 +80,18 @@ export function playlistItems(songs: () => Promise<Song[]> | Song[], after?: () 
 		...app.playlists.map((p) => ({ label: p.name, action: () => add(p.id, p.name) }))
 	];
 }
+
+export const songHeader = (song: Song): MenuHeader => ({
+	title: song.title,
+	subtitle: [song.artist, song.album].filter(Boolean).join(' · '),
+	cover: song.coverArt
+});
+
+export const albumHeader = (album: Album): MenuHeader => ({
+	title: album.name,
+	subtitle: [album.artist, album.year].filter(Boolean).join(' · '),
+	cover: album.coverArt
+});
 
 export function songMenu(song: Song, extra: MenuItem[] = []): MenuItem[] {
 	return [

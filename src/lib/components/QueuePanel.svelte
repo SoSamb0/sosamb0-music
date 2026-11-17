@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { formatDuration, formatTime, plural } from '$lib/app.svelte';
-	import { menu, songMenu } from '$lib/menu.svelte';
+	import { menu, songHeader, songMenu } from '$lib/menu.svelte';
 	import { player } from '$lib/player.svelte';
 	import { settings } from '$lib/settings.svelte';
 	import Cover from './Cover.svelte';
@@ -72,7 +72,7 @@
 					ondragend={() => (dragFrom = dragOver = null)}
 					ondblclick={() => player.jump(i)}
 					oncontextmenu={(e) =>
-						menu.open(e, songMenu(item.song, i === player.index ? [] : [{ label: '', separator: true }, { label: 'Убрать из очереди', icon: 'x', action: () => player.remove(i) }]))}
+						menu.open(e, songMenu(item.song, i === player.index ? [] : [{ label: '', separator: true }, { label: 'Убрать из очереди', icon: 'x', action: () => player.remove(i) }]), songHeader(item.song))}
 				>
 					<button class="thumb" onclick={() => (i === player.index ? player.toggle() : player.jump(i))} aria-label="Играть {item.song.title}">
 						<Cover id={item.song.coverArt} size={80} />

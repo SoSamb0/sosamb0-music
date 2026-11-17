@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { app } from '$lib/app.svelte';
-	import { albumMenu, menu } from '$lib/menu.svelte';
+	import { albumHeader, albumMenu, menu } from '$lib/menu.svelte';
 	import { player } from '$lib/player.svelte';
 	import type { Album } from '$lib/types';
 	import Cover from './Cover.svelte';
@@ -15,7 +15,7 @@
 	}
 </script>
 
-<div class="card" oncontextmenu={(e) => menu.open(e, albumMenu(album))} role="group" aria-label={album.name}>
+<div class="card" oncontextmenu={(e) => menu.open(e, albumMenu(album), albumHeader(album))} role="group" aria-label={album.name}>
 	<div class="art">
 		<button class="open" onclick={() => app.go({ name: 'album', id: album.id })} aria-label="Открыть альбом {album.name}">
 			<Cover id={album.coverArt} size={320} />

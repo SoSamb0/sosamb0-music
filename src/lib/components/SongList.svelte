@@ -2,7 +2,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { app, formatTime } from '$lib/app.svelte';
 	import { drag, endDrag, reorder, startDrag, trackLabel } from '$lib/dnd.svelte';
-	import { menu, playlistItems, songMenu, songsMenu, type MenuItem } from '$lib/menu.svelte';
+	import { menu, playlistItems, songHeader, songMenu, songsMenu, type MenuItem } from '$lib/menu.svelte';
 	import { isLossless, player } from '$lib/player.svelte';
 	import type { Song } from '$lib/types';
 	import Cover from './Cover.svelte';
@@ -134,7 +134,7 @@
 				selected.add(i);
 				anchor = i;
 			}
-			menu.open(e, songMenu(song, extraMenu?.(song, i) ?? []));
+			menu.open(e, songMenu(song, extraMenu?.(song, i) ?? []), songHeader(song));
 		}
 	}
 

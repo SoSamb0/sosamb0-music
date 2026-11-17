@@ -16,6 +16,7 @@ class MainActivity : TauriActivity() {
       navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
     )
     super.onCreate(savedInstanceState)
+    MediaBridge.init(this)
     window.decorView.setBackgroundColor(Color.rgb(10, 10, 13))
 
     // Keep the web interface clear of the status bar, the camera cut-out and the gesture bar

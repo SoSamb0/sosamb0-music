@@ -58,6 +58,7 @@ HTTP/кэш → symphonia → f64 → [ReplayGain] → [ресемплер] → 
 | `src-tauri/src/audio/output_android.rs` | Вывод для Android (AAudio, float, родная частота устройства) |
 | `src-tauri/src/audio/dsp.rs`, `convert.rs`, `resampler.rs`, `analyzer.rs` | EQ/эффекты, конвертация в формат устройства, ресемплер, спектр для визуализатора |
 | `src-tauri/src/media.rs` | Системные медиакнопки Windows (souvlaki) и трей |
+| `src-tauri/src/android_media.rs` + `gen/android/…/MediaBridge.kt`, `PlaybackService.kt` | Android: медиасеанс, уведомление, фоновая служба, аудиофокус |
 | `src-tauri/src/discord.rs` | Статус Discord через локальный pipe + поиск публичной обложки |
 | `src/lib/subsonic.ts` | Клиент Subsonic/OpenSubsonic |
 | `src/lib/player.svelte.ts` | Очередь, транспорт, скробблинг, тексты, предзагрузка, Discord |
