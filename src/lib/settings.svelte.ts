@@ -1,3 +1,4 @@
+import { response } from './eqmath';
 import { invoke } from './tauri';
 import type { ServerConfig } from './subsonic';
 
@@ -39,6 +40,19 @@ export const EQ_PRESETS: Record<string, number[]> = {
 
 export function graphicBands(gains: number[] = EQ_PRESETS['Ровно']): EqBand[] {
 	return GRAPHIC_FREQS.map((freq, i) => ({ kind: 'peak', freq, gainDb: gains[i] ?? 0, q: 1.41, enabled: true }));
+}
+
+/** An equaliser curve the user saved under their own name. */
+export interface UserPreset {
+	name: string;
+	bands: EqBand[];
+	preampDb: number;
+}
+
+/** The sound settings remembered for one output device. */
+export interface DeviceProfile {
+	dsp: DspConfig;
+	preset: string;
 }
 
 export interface Look {
@@ -91,6 +105,13 @@ interface Persisted {
 	};
 	dsp: DspConfig;
 	eqPreset: string;
+	/** Keep the preamp just low enough that the curve never rises above 0 dB. */
+	eqAutoPreamp: boolean;
+	userPresets: UserPreset[];
+	/** Remember the sound settings separately for each output device. */
+	eqPerDevice: boolean;
+	/** By device name as the engine reports it. */
+	deviceProfiles: Record<string, DeviceProfile>;
 	lrclib: boolean;
 	closeToTray: boolean;
 	hotkeys: boolean;
@@ -158,6 +179,10 @@ function defaults(): Persisted {
 			limiter: true
 		},
 		eqPreset: 'Ровно',
+		eqAutoPreamp: true,
+		userPresets: [],
+		eqPerDevice: false,
+		deviceProfiles: {},
 		lrclib: true,
 		closeToTray: false,
 		hotkeys: false,
@@ -247,8 +272,49 @@ class Settings {
 	}
 
 	pushDsp() {
+		const dsp = this.data.dsp;
+		if (this.data.eqAutoPreamp) dsp.preampDb = autoPreamp(dsp);
+		if (this.data.eqPerDevice && this.device) {
+			this.data.deviceProfiles[this.device] = { dsp: $state.snapshot(dsp), preset: this.data.eqPreset };
+		}
 		this.save();
-		return invoke('player_set_dsp', { config: $state.snapshot(this.data.dsp) });
+		return invoke('player_set_dsp', { config: $state.snapshot(dsp) });
+	}
+
+	/** Output device the engine is playing on now (its name), or null before the first track. */
+	device = $state<string | null>(null);
+
+	/**
+	 * The engine moved to another output device: bring up that device's own sound settings.
+	 * Returns true when settings were switched (not on the first device after start).
+	 */
+	deviceChanged(name: string): boolean {
+		if (!name || name === this.device) return false;
+		const first = this.device === null;
+		this.device = name;
+		if (!this.data.eqPerDevice) return false;
+		const saved = this.data.deviceProfiles[name];
+		if (!saved) {
+			// A device seen for the first time starts from the current settings.
+			this.data.deviceProfiles[name] = { dsp: $state.snapshot(this.data.dsp), preset: this.data.eqPreset };
+			this.save();
+			return false;
+		}
+		this.data.dsp = { ...defaults().dsp, ...$state.snapshot(saved.dsp) };
+		this.data.eqPreset = saved.preset;
+		this.pushDsp();
+		return !first;
+	}
+
+	setPerDevice(on: boolean) {
+		this.data.eqPerDevice = on;
+		if (on && this.device) this.data.deviceProfiles[this.device] = { dsp: $state.snapshot(this.data.dsp), preset: this.data.eqPreset };
+		this.save();
+	}
+
+	forgetDevice(name: string) {
+		delete this.data.deviceProfiles[name];
+		this.save();
 	}
 
 	pushOutput() {
@@ -292,22 +358,63 @@ class Settings {
 	}
 
 	applyPreset(name: string) {
+		const own = this.data.userPresets.find((p) => p.name === name);
 		const gains = EQ_PRESETS[name];
-		if (!gains) return;
+		if (own) {
+			this.data.dsp.bands = $state.snapshot(own.bands);
+			this.data.dsp.preampDb = own.preampDb;
+		} else if (gains) {
+			this.data.dsp.bands = graphicBands(gains);
+			// Leave headroom for the largest boost so the limiter has nothing to do.
+			this.data.dsp.preampDb = -Math.max(0, ...gains);
+		} else return;
 		this.data.eqPreset = name;
-		this.data.dsp.bands = graphicBands(gains);
-		// Leave headroom for the largest boost so the limiter has nothing to do.
-		this.data.dsp.preampDb = -Math.max(0, ...gains);
 		this.data.dsp.eqEnabled = true;
 		if (name !== 'Ровно') this.data.dsp.enabled = true;
 		this.pushDsp();
+	}
+
+	isUserPreset(name: string): boolean {
+		return this.data.userPresets.some((p) => p.name === name);
+	}
+
+	/** Why `name` cannot be used for a new preset, or null if it can. */
+	presetNameProblem(name: string, except?: string): string | null {
+		if (!name) return 'Введите название';
+		if (name in EQ_PRESETS) return 'Так называется встроенный пресет';
+		if (name !== except && this.isUserPreset(name)) return 'Пресет с таким названием уже есть';
+		return null;
+	}
+
+	/** Save the current curve as a preset of the user's own (replacing one of the same name). */
+	saveUserPreset(name: string) {
+		const preset: UserPreset = { name, bands: $state.snapshot(this.data.dsp.bands), preampDb: this.data.dsp.preampDb };
+		const list = this.data.userPresets.filter((p) => p.name !== name);
+		this.data.userPresets = [...list, preset].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+		this.data.eqPreset = name;
+		this.save();
+	}
+
+	renameUserPreset(from: string, to: string) {
+		const p = this.data.userPresets.find((x) => x.name === from);
+		if (!p) return;
+		p.name = to;
+		this.data.userPresets.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+		if (this.data.eqPreset === from) this.data.eqPreset = to;
+		this.save();
+	}
+
+	deleteUserPreset(name: string) {
+		this.data.userPresets = this.data.userPresets.filter((p) => p.name !== name);
+		if (this.data.eqPreset === name) this.data.eqPreset = 'Свой';
+		this.save();
 	}
 
 	/**
 	 * Import a headphone correction profile in the AutoEQ / Equalizer APO "ParametricEQ.txt"
 	 * format. Returns the number of filters read.
 	 */
-	importAutoEq(text: string): number {
+	importAutoEq(text: string, name = 'Профиль наушников'): number {
 		const bands: EqBand[] = [];
 		let preamp = 0;
 		for (const line of text.split(/\r?\n/)) {
@@ -327,10 +434,33 @@ class Settings {
 		this.data.dsp.preampDb = preamp;
 		this.data.dsp.eqEnabled = true;
 		this.data.dsp.enabled = true;
-		this.data.eqPreset = 'Профиль наушников';
+		this.data.eqPreset = name;
 		this.pushDsp();
 		return bands.length;
 	}
+}
+
+/** Preamp that brings the highest point of the curve (equaliser and bass) down to 0 dB. */
+export function autoPreamp(dsp: DspConfig): number {
+	const peak = Math.max(0, ...response({ ...dsp, preampDb: 0 }, AUTO_FREQS));
+	// A tenth of a dB below the peak, so rounding can never leave it above 0 dB.
+	return -Math.ceil(peak * 10) / 10;
+}
+
+const AUTO_FREQS = Array.from({ length: 240 }, (_, i) => 20 * 1000 ** (i / 239));
+
+const APO_TYPES: Record<BandKind, string> = { peak: 'PK', lowshelf: 'LSC', highshelf: 'HSC', lowpass: 'LP', highpass: 'HP', notch: 'NO' };
+
+/** The current equaliser (and bass shelf) as an Equalizer APO / AutoEQ "ParametricEQ.txt". */
+export function toApo(dsp: DspConfig): string {
+	const lines = [`Preamp: ${dsp.preampDb.toFixed(1)} dB`];
+	const bands = dsp.eqEnabled ? [...dsp.bands] : [];
+	if (Math.abs(dsp.bassDb) > 1e-6) bands.push({ kind: 'lowshelf', freq: 90, gainDb: dsp.bassDb, q: 0.7, enabled: true });
+	bands.forEach((b, i) => {
+		const gain = b.kind === 'peak' || b.kind === 'lowshelf' || b.kind === 'highshelf' ? ` Gain ${b.gainDb.toFixed(1)} dB` : '';
+		lines.push(`Filter ${i + 1}: ${b.enabled ? 'ON' : 'OFF'} ${APO_TYPES[b.kind]} Fc ${Math.round(b.freq)} Hz${gain} Q ${b.q.toFixed(2)}`);
+	});
+	return lines.map((l) => `${l}\r\n`).join('');
 }
 
 export const settings = new Settings();

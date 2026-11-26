@@ -67,7 +67,9 @@ HTTP/кэш → symphonia → f64 → [ReplayGain] → [ресемплер] → 
 | `src-tauri/src/discord.rs` | Статус Discord через локальный pipe + поиск публичной обложки |
 | `src/lib/subsonic.ts` | Клиент Subsonic/OpenSubsonic |
 | `src/lib/player.svelte.ts` | Очередь, транспорт, скробблинг, тексты, предзагрузка, Discord |
-| `src/lib/settings.svelte.ts` | Все настройки (persist в localStorage) |
+| `src/lib/settings.svelte.ts` | Все настройки (persist в localStorage); EQ: свои пресеты, автопредусиление (`autoPreamp`), профиль на устройство (`deviceChanged`, ключ — имя устройства из сигнального тракта), экспорт в Equalizer APO (`toApo`) |
+| `src/lib/autoeq.ts` | Поиск профилей наушников AutoEQ: `results/INDEX.md` с raw.githubusercontent (CORS открыт), затем `<модель> ParametricEQ.txt` |
+| `src/lib/eqmath.ts`, `components/EqSpectrum.svelte` | Кривая EQ (зеркало dsp.rs) и живой спектр под ней (полосы как в analyzer.rs: 48, 30 Гц–16 кГц, снимается на выходе — после EQ) |
 | `src/lib/components`, `src/lib/views` | Интерфейс (Svelte 5, runes) |
 
 ## Важные решения и грабли (уже наступали)

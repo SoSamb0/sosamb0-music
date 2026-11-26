@@ -168,6 +168,7 @@ class Player {
 			}
 			case 'signal':
 				this.signal = e.path;
+				if (e.path && settings.deviceChanged(e.path.device.deviceName)) app.toast(`Звук для «${e.path.device.deviceName}»`);
 				break;
 			case 'viz':
 				setVizFrame(e);

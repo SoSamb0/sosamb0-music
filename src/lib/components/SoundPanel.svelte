@@ -3,8 +3,11 @@
 	import { app } from '$lib/app.svelte';
 	import { logFreqs, response } from '$lib/eqmath';
 	import { player } from '$lib/player.svelte';
-	import { EQ_PRESETS, GRAPHIC_FREQS, settings, type BandKind } from '$lib/settings.svelte';
+	import { EQ_PRESETS, GRAPHIC_FREQS, settings, toApo, type BandKind } from '$lib/settings.svelte';
 	import { invoke } from '$lib/tauri';
+	import { fetchProfile, FORMS, loadIndex, searchIndex, type AutoEqEntry } from '$lib/autoeq';
+	import { menu, type MenuItem } from '$lib/menu.svelte';
+	import EqSpectrum from './EqSpectrum.svelte';
 	import Icon from './Icon.svelte';
 
 	type Tab = 'eq' | 'fx' | 'out';
@@ -52,12 +55,106 @@
 	}
 
 	async function importProfile(e: Event) {
-		const file = (e.currentTarget as HTMLInputElement).files?.[0];
+		const input = e.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
 		if (!file) return;
-		const count = settings.importAutoEq(await file.text());
+		const name = file.name.replace(/\s*ParametricEQ\.txt$/i, '').replace(/\.txt$/i, '').trim();
+		const count = settings.importAutoEq(await file.text(), name || undefined);
 		app.toast(count ? `Профиль загружен: фильтров — ${count}` : 'В файле не найдено фильтров', count ? 'info' : 'error');
-		(e.currentTarget as HTMLInputElement).value = '';
+		input.value = '';
+		if (count) finder = false;
 	}
+
+	// ------------------------------------------------------------- AutoEQ search
+	let finder = $state(false);
+	let query = $state('');
+	let entries = $state.raw<AutoEqEntry[] | null>(null);
+	let indexError = $state('');
+	let fetching = $state<string | null>(null);
+	const found = $derived(entries ? searchIndex(entries, query) : []);
+
+	function openFinder() {
+		finder = !finder;
+		if (finder && !entries) {
+			indexError = '';
+			loadIndex()
+				.then((list) => (entries = list))
+				.catch(() => (indexError = 'Не удалось загрузить базу AutoEQ. Проверьте интернет.'));
+		}
+	}
+
+	async function pick(entry: AutoEqEntry) {
+		fetching = entry.path;
+		try {
+			const count = settings.importAutoEq(await fetchProfile(entry), entry.name);
+			if (count) {
+				app.toast(`${entry.name}: коррекция включена`);
+				finder = false;
+				query = '';
+			} else app.toast('В профиле не найдено фильтров', 'error');
+		} catch (e) {
+			app.toast(e instanceof Error ? e.message : 'Не удалось загрузить профиль', 'error');
+		} finally {
+			fetching = null;
+		}
+	}
+
+	// ------------------------------------------------------------- own presets
+	async function savePreset() {
+		const current = settings.data.eqPreset;
+		// Suggest the current name unless it is a built-in one (those cannot be overwritten).
+		const suggestion = current in EQ_PRESETS || current === 'Свой' ? '' : current;
+		const name = (await app.ask('Название пресета', suggestion))?.trim();
+		if (name === undefined) return;
+		if (settings.isUserPreset(name)) {
+			if (name !== current && !(await app.confirm(`Заменить пресет «${name}»?`, 'Заменить'))) return;
+		} else {
+			const problem = settings.presetNameProblem(name);
+			if (problem) return app.toast(problem, 'error');
+		}
+		settings.saveUserPreset(name);
+		app.toast(`Пресет «${name}» сохранён`);
+	}
+
+	async function renamePreset(from: string) {
+		const name = (await app.ask('Новое название', from))?.trim();
+		if (name === undefined || name === from) return;
+		const problem = settings.presetNameProblem(name, from);
+		if (problem) return app.toast(problem, 'error');
+		settings.renameUserPreset(from, name);
+	}
+
+	async function deletePreset(name: string) {
+		if (await app.confirm(`Удалить пресет «${name}»?`)) settings.deleteUserPreset(name);
+	}
+
+	async function copyApo() {
+		try {
+			await navigator.clipboard.writeText(toApo($state.snapshot(dsp)));
+			app.toast('Скопировано — вставьте в config.txt Equalizer APO');
+		} catch {
+			app.toast('Не удалось скопировать', 'error');
+		}
+	}
+
+	function presetMenu(e: MouseEvent) {
+		const current = settings.data.eqPreset;
+		const items: MenuItem[] = [{ label: 'Сохранить как свой пресет…', icon: 'plus', action: savePreset }];
+		if (settings.isUserPreset(current)) {
+			items.push(
+				{ label: `Переименовать «${current}»…`, icon: 'sliders', action: () => renamePreset(current) },
+				{ label: `Удалить «${current}»`, icon: 'trash', danger: true, action: () => deletePreset(current) }
+			);
+		}
+		items.push(
+			{ label: '', separator: true },
+			{ label: 'Загрузить файл профиля…', icon: 'folder', action: () => fileInput?.click() },
+			{ label: 'Скопировать для Equalizer APO', icon: 'copy', action: copyApo }
+		);
+		menu.open(e, items, { title: 'Пресеты' });
+	}
+
+	const remembered = $derived(Object.keys(settings.data.deviceProfiles));
 
 	const rate = (hz: number) => `${+(hz / 1000).toFixed(1)} кГц`;
 	const KINDS: Record<BandKind, string> = { peak: 'Пик', lowshelf: 'НЧ-полка', highshelf: 'ВЧ-полка', lowpass: 'ФНЧ', highpass: 'ФВЧ', notch: 'Режектор' };
@@ -100,12 +197,15 @@
 
 		{#if tab === 'eq'}
 			<div class="block" class:off={!dsp.enabled}>
-				<svg viewBox="0 0 {W} {H}" class="curve" preserveAspectRatio="none" aria-hidden="true">
-					{#each gridX as g (g.f)}<line x1={g.x} x2={g.x} y1="0" y2={H} class="grid" />{/each}
-					<line x1="0" x2={W} y1={H / 2} y2={H / 2} class="zero" />
-					<path d={curve.area} class="area" />
-					<path d={curve.line} class="trace" />
-				</svg>
+				<div class="graph">
+					<EqSpectrum />
+					<svg viewBox="0 0 {W} {H}" class="curve" preserveAspectRatio="none" aria-hidden="true">
+						{#each gridX as g (g.f)}<line x1={g.x} x2={g.x} y1="0" y2={H} class="grid" />{/each}
+						<line x1="0" x2={W} y1={H / 2} y2={H / 2} class="zero" />
+						<path d={curve.area} class="area" />
+						<path d={curve.line} class="trace" />
+					</svg>
+				</div>
 				<div class="axis faint"><span>20 Гц</span><span>200</span><span>2k</span><span>20k</span></div>
 
 				<div class="row">
@@ -115,12 +215,50 @@
 						onchange={(e) => settings.applyPreset(e.currentTarget.value)}
 						aria-label="Пресет эквалайзера"
 					>
-						{#if !(settings.data.eqPreset in EQ_PRESETS)}<option value={settings.data.eqPreset}>{settings.data.eqPreset}</option>{/if}
-						{#each Object.keys(EQ_PRESETS) as name (name)}<option value={name}>{name}</option>{/each}
+						{#if !(settings.data.eqPreset in EQ_PRESETS) && !settings.isUserPreset(settings.data.eqPreset)}<option value={settings.data.eqPreset}>{settings.data.eqPreset}</option>{/if}
+						<optgroup label="Встроенные">
+							{#each Object.keys(EQ_PRESETS) as name (name)}<option value={name}>{name}</option>{/each}
+						</optgroup>
+						{#if settings.data.userPresets.length}
+							<optgroup label="Мои">
+								{#each settings.data.userPresets as p (p.name)}<option value={p.name}>{p.name}</option>{/each}
+							</optgroup>
+						{/if}
 					</select>
-					<button class="btn small" onclick={() => fileInput?.click()} title="Файл ParametricEQ.txt из проекта AutoEQ">Профиль наушников…</button>
+					<button class="btn small" class:on={finder} onclick={openFinder} title="Коррекция под модель наушников из базы AutoEQ"><Icon name="search" size={15} />Наушники</button>
+					<button class="icon-btn" onclick={presetMenu} aria-label="Пресеты" title="Сохранить, переименовать, экспорт"><Icon name="more" size={20} /></button>
 					<input type="file" accept=".txt,text/plain" bind:this={fileInput} onchange={importProfile} hidden />
 				</div>
+
+				{#if finder}
+					<div class="finder">
+						<!-- svelte-ignore a11y_autofocus -->
+						<input class="field" bind:value={query} placeholder="Модель наушников, например HD 650" aria-label="Поиск наушников" autofocus={!isMobile} />
+						{#if indexError}
+							<p class="hint warn">{indexError}</p>
+						{:else if !entries}
+							<div class="hint loading"><span class="spinner tiny"></span>Загружаем базу AutoEQ…</div>
+						{:else if query.trim() && !found.length}
+							<p class="hint">Такой модели нет в базе. Можно загрузить свой файл ParametricEQ.txt.</p>
+						{:else if found.length}
+							<div class="results">
+								{#each found as e (e.path)}
+									<button class="result" onclick={() => pick(e)} disabled={fetching !== null}>
+										<span class="ellipsis">{e.name}</span>
+										<span class="faint src">{e.source}{FORMS[e.form] ? ` · ${FORMS[e.form]}` : ''}</span>
+										{#if fetching === e.path}<span class="spinner tiny"></span>{/if}
+									</button>
+								{/each}
+							</div>
+						{:else}
+							<p class="hint">Профиль выравнивает звук конкретной модели под нейтральную целевую кривую. В базе {entries.length.toLocaleString('ru')} моделей.</p>
+						{/if}
+						<div class="finder-foot">
+							<button class="link" onclick={() => fileInput?.click()}>Загрузить файл ParametricEQ.txt…</button>
+							<span class="faint">Профили — проект AutoEQ</span>
+						</div>
+					</div>
+				{/if}
 
 				{#if graphic}
 					<div class="bands">
@@ -174,7 +312,8 @@
 						max="6"
 						step="0.5"
 						value={dsp.preampDb}
-						style:--fill="{((dsp.preampDb + 15) / 21) * 100}%"
+						disabled={settings.data.eqAutoPreamp}
+						style:--fill="{((Math.max(-15, dsp.preampDb) + 15) / 21) * 100}%"
 						oninput={(e) => {
 							dsp.preampDb = +e.currentTarget.value;
 							settings.pushDsp();
@@ -182,8 +321,44 @@
 					/>
 					<span class="tnum num">{dsp.preampDb > 0 ? '+' : ''}{dsp.preampDb.toFixed(1)} дБ</span>
 				</label>
-				{#if curve.peak > 0.05}
+				<div class="toggle">
+					<div>
+						<div class="strong">Автопредусиление</div>
+						<div class="hint">Снижает уровень ровно настолько, чтобы самая высокая точка кривой была на 0 дБ, — без перегрузки и без работы лимитера.</div>
+					</div>
+					<button class="switch" role="switch" aria-checked={settings.data.eqAutoPreamp} aria-label="Автопредусиление"
+						onclick={() => { settings.data.eqAutoPreamp = !settings.data.eqAutoPreamp; settings.pushDsp(); }}></button>
+				</div>
+				{#if curve.peak > 0.05 && !settings.data.eqAutoPreamp}
 					<p class="hint warn">Кривая поднимается выше 0 дБ на {curve.peak.toFixed(1)} дБ. Лимитер не даст звуку исказиться, но чище — снизить предусиление.</p>
+				{/if}
+
+				{#if !isMobile}
+					<div class="toggle">
+						<div>
+							<div class="strong">Свой звук для каждого устройства</div>
+							<div class="hint">
+								Наушники, колонки и ЦАП помнят свой эквалайзер и эффекты — при переключении они встают сами.
+								{#if settings.data.eqPerDevice && settings.device}Сейчас: {settings.device}.{/if}
+							</div>
+						</div>
+						<button class="switch" role="switch" aria-checked={settings.data.eqPerDevice} aria-label="Свой звук для каждого устройства"
+							onclick={() => settings.setPerDevice(!settings.data.eqPerDevice)}></button>
+					</div>
+					{#if settings.data.eqPerDevice && remembered.length}
+						<div class="devices">
+							{#each remembered as name (name)}
+								{@const profile = settings.data.deviceProfiles[name]}
+								<div class="device" class:current={name === settings.device}>
+									<span class="ellipsis">{name}</span>
+									<span class="faint ellipsis">{profile.dsp.enabled ? profile.preset : 'без обработки'}</span>
+									{#if name !== settings.device}
+										<button class="icon-btn tiny" onclick={() => settings.forgetDevice(name)} aria-label="Забыть {name}" title="Забыть"><Icon name="x" size={14} /></button>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					{/if}
 				{/if}
 			</div>
 		{:else if tab === 'fx'}
@@ -436,11 +611,117 @@
 		color: var(--faint);
 	}
 
-	.curve {
-		width: 100%;
+	.graph {
+		position: relative;
 		height: 150px;
 		border-radius: var(--radius);
 		background: rgb(0 0 0 / 0.28);
+		overflow: hidden;
+	}
+
+	.curve {
+		position: relative;
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.finder {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 12px;
+		border-radius: var(--radius);
+		background: var(--surface);
+	}
+
+	.loading {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.spinner.tiny {
+		width: 14px;
+		height: 14px;
+		border-width: 2px;
+	}
+
+	.results {
+		display: flex;
+		flex-direction: column;
+		max-height: 260px;
+		overflow-y: auto;
+	}
+
+	.result {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto auto;
+		align-items: center;
+		gap: 10px;
+		min-height: 38px;
+		padding: 0 10px;
+		border-radius: 7px;
+		text-align: left;
+		font-size: 13.5px;
+	}
+
+	.result:hover:not(:disabled) {
+		background: var(--surface-strong);
+	}
+
+	.result .src {
+		font-size: 12px;
+	}
+
+	.finder-foot {
+		display: flex;
+		justify-content: space-between;
+		gap: 10px;
+		flex-wrap: wrap;
+		font-size: 12px;
+	}
+
+	.link {
+		color: var(--accent);
+		font-size: 12.5px;
+	}
+
+	.link:hover {
+		text-decoration: underline;
+	}
+
+	.btn.on {
+		background: rgb(var(--accent-rgb) / 0.2);
+		color: var(--accent);
+	}
+
+	.devices {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin-top: -4px;
+	}
+
+	.device {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, auto) 28px;
+		align-items: center;
+		gap: 10px;
+		min-height: 34px;
+		padding: 0 4px 0 10px;
+		border-radius: 7px;
+		font-size: 13px;
+		background: var(--surface);
+	}
+
+	.device.current {
+		box-shadow: inset 2px 0 0 var(--accent);
+	}
+
+	.icon-btn.tiny {
+		width: 28px;
+		height: 28px;
 	}
 
 	.grid {
@@ -560,6 +841,23 @@
 		padding: 0 8px;
 		border-radius: 7px;
 		font-size: 13px;
+	}
+
+	.filter > span {
+		white-space: nowrap;
+	}
+
+	@media (max-width: 480px) {
+		.filter {
+			grid-template-columns: 30px minmax(0, 1fr) auto auto auto;
+			gap: 8px;
+			font-size: 12px;
+		}
+
+		.kind {
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
 	}
 
 	.filter:nth-child(odd) {
