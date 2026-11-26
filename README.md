@@ -2,7 +2,7 @@
 
 Hi-fi плеер для своего сервера [Navidrome](https://www.navidrome.org/) (и других серверов с Subsonic API) — для Windows и Android.
 
-**[⬇ Скачать последнюю версию](../../releases/latest)**
+**[⬇ Скачать последнюю версию](https://github.com/SoSamb0/sosamb0-music/releases/latest)**
 
 | Платформа | Файл |
 | --- | --- |
