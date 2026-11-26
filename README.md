@@ -1,9 +1,39 @@
 # SoSamb0 Music
 
-Hi-fi desktop client for [Navidrome](https://www.navidrome.org/) (and other Subsonic-compatible servers).
+Hi-fi плеер для своего сервера [Navidrome](https://www.navidrome.org/) (и других серверов с Subsonic API) — для Windows и Android.
+
+**[⬇ Скачать последнюю версию](../../releases/latest)**
+
+| Платформа | Файл |
+| --- | --- |
+| Windows 10/11 (64 бит) | `SoSamb0-Music-<версия>-setup.exe` |
+| Android 8.0+ (64 бит) | `SoSamb0-Music-<версия>-arm64.apk` |
+
+## Что умеет
+
+- **Звук без потерь:** bit-perfect вывод через WASAPI в эксклюзивном режиме, gapless и кроссфейд, ReplayGain.
+- **Эквалайзер:** 10 полос и параметрический EQ, профили наушников из базы AutoEQ (8800+ моделей), свои пресеты, автопредусиление, отдельный звук для каждого устройства, живой спектр.
+- **Эффекты:** бас, crossfeed для наушников, ширина стерео, лимитер.
+- **Синхронный текст песен** с сервера или из LRCLIB.
+- **Умные плейлисты:** самые прослушиваемые, давно не игравшие, недавно добавленные; поиск дубликатов, перетаскивание треков.
+- **Визуализаторы**, обложка на весь экран, круглая «пластинка», цвет интерфейса под обложку.
+- **Кэш очереди** для прослушивания без задержек, статус в Discord, медиакнопки Windows и уведомление на Android.
+
+## Установка
+
+**Windows.** Запустите `setup.exe`. Если Windows покажет «Windows защитила ваш компьютер» — нажмите «Подробнее» → «Выполнить в любом случае» (у программы пока нет платной подписи издателя).
+
+**Android.** Скачайте `.apk` на телефон и откройте. Если телефон спросит — разрешите установку из этого источника (браузера или файлового менеджера).
+
+При первом запуске укажите адрес своего сервера Navidrome, логин и пароль.
+
+---
+
+## For developers
+
 Tauri 2 + Svelte 5 for the interface, a native Rust engine for the sound.
 
-## Run
+### Run
 
 ```bash
 npm install
@@ -14,7 +44,7 @@ npm run tauri build    # installer in src-tauri/target/release/bundle/nsis
 `npm run dev` alone serves the interface in a browser with a simulated transport and a built-in
 demo library ("Посмотреть на демо-библиотеке" on the login screen) — handy for UI work, makes no sound.
 
-## Sound
+### Sound
 
 ```
 HTTP/cache → symphonia decode → f64 → [ReplayGain] → [resample] → [crossfade]
@@ -36,7 +66,7 @@ Proof lives in the tests (`cargo test` in `src-tauri`):
 - `deck::tests::seek_lands_on_the_exact_sample`, `resampler::tests::*` — sample-accurate seeking
   and delay-compensated resampling (what keeps gapless gapless).
 
-## Layout
+### Layout
 
 | Path | What |
 | --- | --- |
@@ -52,7 +82,7 @@ Proof lives in the tests (`cargo test` in `src-tauri`):
 | `src/lib/player.svelte.ts` | Queue, transport, scrobbling, lyrics |
 | `src/lib/components`, `src/lib/views` | Interface |
 
-## Android
+### Android
 
-In progress — see [docs/ANDROID.md](docs/ANDROID.md) for the toolchain setup and the plan.
+Build: `scripts/android-build.ps1`; toolchain and notes in [docs/ANDROID.md](docs/ANDROID.md). Both versions at once: `scripts/build-all.ps1`.
 Notes for contributors and AI assistants are in [CLAUDE.md](CLAUDE.md).

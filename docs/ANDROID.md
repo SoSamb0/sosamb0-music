@@ -25,7 +25,7 @@
 
 ## 0. Инструменты (установлены)
 
-Без Android Studio, только командная строка — в `C:\Users\EpicMonkey\Android`:
+Без Android Studio, только командная строка — в `%USERPROFILE%\Android`:
 `jdk17` (Temurin 17), `Sdk` (platform-tools, platforms;android-36, build-tools;36.1.0,
 ndk;28.2.13676358, cmdline-tools). Переменные пользователя `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME`
 и `platform-tools` в `Path` заданы. Цели Rust для Android стоят.
