@@ -30,6 +30,14 @@ powershell -ExecutionPolicy Bypass -File scripts/build-all.ps1 [-Install] [-Skip
                                     # проверки + обе версии → release/<версия>/ (установщик, portable exe, APK)
 ```
 
+- GitHub (аккаунт SoSamb0): код — приватный `SoSamb0/sosamb0-music` (remote `origin`); сборки — публичный
+  `SoSamb0/sosamb0-music-releases` (только README и релизы). Релиз: поднять версию в `tauri.conf.json`,
+  `package.json`, `Cargo.toml` → `build-all.ps1` → `gh release create vX.Y.Z --repo SoSamb0/sosamb0-music-releases`
+  с `…-setup.exe` и `…-arm64.apk` из `release/<версия>/`.
+- **Почту пользователя в GitHub не отправлять.** Автор коммитов — `213232146+SoSamb0@users.noreply.github.com`
+  (задан локально); коммиты через API — с этим же адресом.
+- APK подписан отладочным ключом `%USERPROFILE%\.android\debug.keystore`. Обновление ставится поверх старого
+  только с тем же ключом — его нельзя терять или пересоздавать.
 - ПК и APK — один код: интерфейс, EQ/DSP и движок общие. После любой правки собирать **обе** версии
   (`build-all.ps1`, из Bash-инструмента) и проверять и обычную, и телефонную раскладку (сенсорный ввод тоже).
 
