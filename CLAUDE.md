@@ -26,7 +26,12 @@ npm run check                       # проверка типов Svelte/TS
 cd src-tauri && cargo test --lib    # тесты звукового движка (26 шт., 2 живых — с --ignored)
 npm run tauri build                 # релиз: src-tauri/target/release/SoSamb0 Music.exe и NSIS-установщик
 powershell -ExecutionPolicy Bypass -File scripts/android-build.ps1 [-Install]   # APK для телефона
+powershell -ExecutionPolicy Bypass -File scripts/build-all.ps1 [-Install] [-SkipChecks] [-Only pc|android]
+                                    # проверки + обе версии → release/<версия>/ (установщик, portable exe, APK)
 ```
+
+- ПК и APK — один код: интерфейс, EQ/DSP и движок общие. После любой правки собирать **обе** версии
+  (`build-all.ps1`, из Bash-инструмента) и проверять и обычную, и телефонную раскладку (сенсорный ввод тоже).
 
 - Телефонная раскладка включается по user agent (`src/lib/platform.ts`, `isMobile`): в браузерной панели —
   `resize_window` с пресетом `mobile`. Мобильные компоненты — `src/lib/components/mobile`.

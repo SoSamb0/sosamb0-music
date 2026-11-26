@@ -11,3 +11,6 @@ vite.config.ts.timestamp-*
 
 # Android build output copied by scripts/android-build.ps1
 *.apk
+
+# Both builds collected by scripts/build-all.ps1
+/release
